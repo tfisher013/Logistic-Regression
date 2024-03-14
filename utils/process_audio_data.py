@@ -1,3 +1,4 @@
+import csv
 import os
 import librosa
 import numpy as np
@@ -19,18 +20,17 @@ def get_audio_features(audio_file_dir: str,
     if not os.path.isdir(feature_file_dir):
         os.mkdir(feature_file_dir)
 
+    csv_output_file_path = os.path.join(feature_file_dir, 'mfcc-features-' + os.path.basename(feature_file_dir) + '.csv')
+
     for audio_filename in os.listdir(audio_file_dir):
 
         if audio_filename == '.DS_Store':
             continue
 
         audio_filename_no_extension = audio_filename.replace('.au', '')
-        csv_output_file_path = os.path.join(feature_file_dir, 'mfcc-' + audio_filename_no_extension + '.csv')
 
         audio_file_path = os.path.join(audio_file_dir, audio_filename)
         if os.path.isfile(audio_file_path):
-
-            print(audio_file_path)
 
             audio_data, sample_rate = librosa.load(audio_file_path)
 
@@ -38,9 +38,13 @@ def get_audio_features(audio_file_dir: str,
             if use_mfcc:
                 mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
                 mcff_pca = pca.fit_transform(mcff.T)
-                with open(csv_output_file_path, 'w') as f:
-                    np.savetxt(f, mcff_pca.flatten('F').reshape(1, -1), delimiter=",")
-                #print(mcff_pca)
+
+                feature_content = [audio_filename_no_extension]
+                feature_content.extend(np.squeeze(mcff_pca.flatten('F').reshape(1, -1)).tolist())
+                    
+                with open(csv_output_file_path, 'a', newline='') as csvfile:
+                    write = csv.writer(csvfile)
+                    write.writerow(feature_content)
 
             if use_stft:
                 stft = librosa.feature.chroma_stft(y=audio_data, sr=sample_rate)
