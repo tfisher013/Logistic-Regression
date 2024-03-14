@@ -22,7 +22,7 @@ def get_audio_features(audio_file_dir: str,
 
     csv_output_file_path = os.path.join(feature_file_dir, 'mfcc-features-' + os.path.basename(feature_file_dir) + '.csv')
 
-    for audio_filename in os.listdir(audio_file_dir):
+    for (file_index, audio_filename) in enumerate(os.listdir(audio_file_dir)):
 
         if audio_filename == '.DS_Store':
             continue
@@ -43,7 +43,13 @@ def get_audio_features(audio_file_dir: str,
                 feature_content.extend(np.squeeze(mcff_pca.flatten('F').reshape(1, -1)).tolist())
                     
                 with open(csv_output_file_path, 'a', newline='') as csvfile:
+
                     write = csv.writer(csvfile)
+
+                    # write header row for first file
+                    if file_index == 0:
+                        write.writerow(['file'] + ['Coeff-' + str(i+1) for i in range(len(feature_content) - 1)])
+
                     write.writerow(feature_content)
 
             if use_stft:
