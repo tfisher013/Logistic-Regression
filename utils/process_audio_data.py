@@ -3,8 +3,67 @@ import os
 import librosa
 import numpy as np
 from sklearn.decomposition import PCA
+from utils.consts import feature_file_dir
 
-feature_file_dir = 'feature_files'
+
+def write_matrix_to_csv(file_path: str, mat: np.array, include_header: bool=False):
+    """ Writes the provided numpy array as a row in the provided CSV file by flattening
+
+        Parameters:
+            file_path: the path to the csv file to which the row should be written
+            mat: a numpy array
+            include_header: whether or not to include a header in the write
+    """
+
+    with open(file_path, 'a', newline='') as f:
+
+        write = csv.writer(f)
+
+        # write header row for first file
+        if include_header:
+            write.writerow(['Feature-' + str(i+1) for i in range(len(np.squeeze(mat.flatten('F').reshape(1, -1))))])
+
+        write.writerow(np.squeeze(mat.flatten('F').reshape(1, -1)))
+
+
+def generate_target_csv(target_path: str) -> str:
+    """ Generates a feature matrix from a directory of training instances
+
+        Parameters:
+            target_path: the path to the directory containing training
+                instances all pertaining to a particular class
+
+        Returns:
+            the path to the generated csv file
+
+    """
+
+    class_label = os.path.basename(target_path)
+
+    if not os.path.isdir(feature_file_dir):
+        os.mkdir(feature_file_dir)
+    csv_output_file_path = os.path.join(feature_file_dir, class_label + '-features.csv')
+
+    pca = PCA(n_components=2)
+
+    for training_file_idx, training_file in enumerate(os.listdir(target_path)):
+        training_file_path = os.path.join(target_path, training_file)
+        if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
+
+            audio_data, sample_rate = librosa.load(training_file_path)
+
+            # raw mcff data is of dimension (20 x 1293)
+            mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
+
+            # keep only the first 10 rows, and use PCA to keep only a subset of cols
+            mcff_pca = pca.fit_transform(mcff[:10])
+
+            write_matrix_to_csv(csv_output_file_path, mcff_pca, training_file_idx == 0)
+
+    return csv_output_file_path
+
+
+
 
 def get_audio_features(audio_file_dir: str,
                        use_mfcc: bool=True,
@@ -75,4 +134,5 @@ def get_audio_features(audio_file_dir: str,
 
 if __name__ == '__main__':
 
-    get_audio_features('../data/train/blues')
+    generate_target_csv('../data/train/blues')
+    #get_audio_features('../data/train/blues')
