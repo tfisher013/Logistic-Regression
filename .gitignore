@@ -1,1 +1,4 @@
 .DS_Store
+feature_files/
+models/
+*.csv
