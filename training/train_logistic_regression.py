@@ -6,7 +6,7 @@ from utils.consts import *
 from utils.process_audio_data import generate_target_csv
 
 
-def p_hat(X_i: np.array, W_i: np.array) -> float:
+def p_hat(X: np.array, W_i: np.array) -> float:
     """ Computes the predicted probability of a positive class
             instance given the provided model weights and a
             training instance
@@ -22,9 +22,9 @@ def p_hat(X_i: np.array, W_i: np.array) -> float:
 
     """
 
-    positive_pred_frac = 1 / (1 + np.exp(np.dot(W_i, X_i)))
+    positive_pred_frac = 1 / (1 + np.exp(np.dot(X, W_i.T)))
 
-    return positive_pred_frac[positive_pred_frac == 1] / len(positive_pred_frac)
+    return len(positive_pred_frac[positive_pred_frac > 0]) / len(positive_pred_frac)
 
 
 def train_logistic_regression(training_data_dir: str):
@@ -44,14 +44,16 @@ def train_logistic_regression(training_data_dir: str):
             class_labels.append(class_dir)
 
     # initialize weight matrix to zeros
-    W = np.zeros(len(class_labels), num_features)
+    W = np.zeros((len(class_labels), num_features))
 
     # train one row of W per class
+    print(f'the contents of {training_data_dir} are {os.listdir(training_data_dir)}')
     for idx, class_dir in enumerate(os.listdir(training_data_dir)):
-        if os.path.isdir(class_dir):
+        class_dir_path = os.path.join(training_data_dir, class_dir)
+        if os.path.isdir(class_dir_path) and class_dir.startswith('.') == False:
         
             # generate CSV file using specified directory
-            class_csv_file = generate_target_csv(class_dir)
+            class_csv_file = generate_target_csv(class_dir_path)
         
             # read CSV file into training instance matrix
             X_train_class = np.genfromtxt(class_csv_file, delimiter=',', skip_header=1)
@@ -60,7 +62,9 @@ def train_logistic_regression(training_data_dir: str):
             W[idx] = gradient_descent(X_train_class)
     
     # save model to file after training
-    model_name = 'model' + int(time.time())
+    model_name = 'model' + str(int(time.time()))
+    if not os.path.isdir('models'):
+        os.mkdir('models')
     np.savetxt(os.path.join(model_dir, model_name), W)
     
 
@@ -78,23 +82,24 @@ def gradient_descent(X_training: np.array) -> np.array:
                 particular class being trained for with this function call
     """
 
-    num_features = X_training.shape[1] - 1
+    num_features = X_training.shape[1]
 
     # initialize weight vector to random values
     w = np.random.rand(num_features)
 
     target_model_error = float('inf')
     while target_model_error > error_threshold:
-        
-        summed_errors = np.zeros(num_features)
-        for i in X_training:
-            summed_errors += (1 - p_hat(i, w)) * i
-        w += eta * summed_errors
+
+        w += eta * (1 - p_hat(X_training, w)) * np.sum(X_training, axis=0)
 
         target_model_error = 0
         for i in X_training:
             target_model_error += (np.dot(i, w)) ** 2
 
     return w
+
+if __name__ == '__main__':
+
+    train_logistic_regression('../data/train')
 
 
