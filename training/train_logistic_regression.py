@@ -6,6 +6,32 @@ from utils.consts import *
 from utils.process_audio_data import generate_target_csv
 
 
+
+def classify(x: np.array, W: np.array, class_values: np.array) -> np.array:
+    """ Returns the class to which the model predicts the provided instance
+            belongs
+
+        Parameters:
+            x: a vector of features represented as a 1D array
+            W: the matrix of weights represented as a 2D array
+            class_values: a matrix containing each class in one-hot-encoding
+                as a row vector
+    """
+
+    predicted_probabilities = np.exp(np.dot(x, W))
+
+    # replace the last entry with 1 - the sum over the other entries;
+    # this is an invariant of our predictions vector that it sums to 1
+    predicted_probabilities[-1] = 1 - np.sum(predicted_probabilities[:-1])
+
+    # return the predicted class (as a one-hot-encoding vector), gained from
+    # the index of the max value in the vector of predicted probabilities
+    return class_values(np.argmax(predicted_probabilities))
+
+
+########################## OLD IMPLEMENTATION BELOW THIS LINE ##########################
+
+
 def p_hat(X: np.array, W_i: np.array) -> float:
     """ Computes the predicted probability of a positive class
             instance given the provided model weights and a
