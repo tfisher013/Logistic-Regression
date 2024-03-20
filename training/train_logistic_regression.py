@@ -90,6 +90,10 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_v
         # update W
         W += eta * (np.multiply(X_training.T, class_error).T - np.multiply(lambda_hyperparameter, W))
 
+        # recompute error
+        predicted_classes = generate_class_predictions(X_training, W, class_values)
+        model_error = np.linalg.norm(Y_training - predicted_classes)
+
     return W
 
 
