@@ -60,6 +60,37 @@ def generate_class_predictions(X: np.array, W: np.array, class_values: np.array)
     return np.take(class_values, np.argmax(prediction_matrix, axis=0))
 
 
+def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_values: np.array) -> np.array:
+    """ Performs gradient descent using the provided training data, split between feature
+            values and associated classes
+
+        Parameters:
+            X_training: a matrix where each row represents a training instance without
+                an associated class being included
+            Y_training: a matrix with each row representing the one-hot-encoding of the
+                class associated with the same training instance in X_training
+            class_values: a matrix containing each class in one-hot-encoding
+                as a row vector
+
+        Returns:
+            a matrix of weights representing the trained model
+    """
+
+    W: np.array = np.random.rand()
+    model_error = np.inf
+
+    while model_error > epsilon:
+
+        # generate predictions using current weight matrix
+        predicted_classes = generate_class_predictions(X_training, W, class_values)
+
+        # compute difference between true classes and predicted classes
+        class_error = np.linalg.norm(Y_training - predicted_classes)
+
+        # update W
+        W += eta * (np.multiply(X_training.T, class_error).T - np.multiply(lambda_hyperparameter, W))
+
+    return W
 
 
 ########################## OLD IMPLEMENTATION BELOW THIS LINE ##########################
