@@ -1,9 +1,12 @@
 # the percentage error to allow before terminating
 # gradient descent
-error_threshold = 0.01
+epsilon = 0.01
 
 # step size used for gradient descent
 eta = 1.0
+
+# regularization penalty
+lambda_hyperparameter = 1.0
 
 # number of features extracted from audio files
 num_features = 20

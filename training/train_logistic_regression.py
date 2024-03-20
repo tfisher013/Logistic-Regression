@@ -32,7 +32,7 @@ def classify(x: np.array, W: np.array, class_values: np.array) -> np.array:
     return class_values(np.argmax(predicted_probabilities))
 
 
-def generate_predictions(X: np.array, W: np.array, class_values: np.array) -> np.array:
+def generate_class_predictions(X: np.array, W: np.array, class_values: np.array) -> np.array:
     """ Generates a vector of predictions for each row of the provided X
 
         Parameters:
@@ -147,7 +147,7 @@ def gradient_descent(X_training: np.array) -> np.array:
     w = np.random.rand(num_features)
 
     target_model_error = float('inf')
-    while target_model_error > error_threshold:
+    while target_model_error > epsilon:
 
         w += eta * (1 - p_hat(X_training, w)) * np.sum(X_training, axis=0)
 
