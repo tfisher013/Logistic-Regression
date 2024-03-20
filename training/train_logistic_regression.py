@@ -16,6 +16,9 @@ def classify(x: np.array, W: np.array, class_values: np.array) -> np.array:
             W: the matrix of weights represented as a 2D array
             class_values: a matrix containing each class in one-hot-encoding
                 as a row vector
+
+        Returns:
+            the predicted class in one-hot-encoding
     """
 
     predicted_probabilities = np.exp(np.dot(x, W))
@@ -27,6 +30,36 @@ def classify(x: np.array, W: np.array, class_values: np.array) -> np.array:
     # return the predicted class (as a one-hot-encoding vector), gained from
     # the index of the max value in the vector of predicted probabilities
     return class_values(np.argmax(predicted_probabilities))
+
+
+def generate_predictions(X: np.array, W: np.array, class_values: np.array) -> np.array:
+    """ Generates a vector of predictions for each row of the provided X
+
+        Parameters:
+            X: a matrix of instances, with each row representing a single instance
+            W: the model weight matrix
+            class_values: a matrix containing each class in one-hot-encoding
+                as a row vector
+
+        Returns
+            a matrix of predicted classes for each instance in X using model weights
+                W where each row represents a predicted class in one-hot-encoding for
+                the corresponding entry in X in one-hot-encoding
+    """
+
+    # generate a matrix of predictions, where each row contains a vector of length
+    # (# classes) and each element in the row vector represents the probability of 
+    # that vector in X belong to a specific class
+    prediction_matrix = np.dot(X, W)
+
+    # replace last column of prediction matrix with 1 - sum(row elements)
+    prediction_matrix[:,-1] = 1 - prediction_matrix[:,:-1].sum(axis=1)
+
+    # return the class for each instance by using the column index of the max
+    # value per row as a row index into the class_values matrix
+    return np.take(class_values, np.argmax(prediction_matrix, axis=0))
+
+
 
 
 ########################## OLD IMPLEMENTATION BELOW THIS LINE ##########################
