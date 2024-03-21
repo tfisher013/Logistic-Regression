@@ -67,10 +67,9 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_v
         Parameters:
             X_training: a matrix where each row represents a training instance without
                 an associated class being included
-            Y_training: a matrix with each row representing the one-hot-encoding of the
-                class associated with the same training instance in X_training
-            class_values: a matrix containing each class in one-hot-encoding
-                as a row vector
+            Y_training: a matrix with each row representing the class associated with
+                the corresponding training instance in X_training
+            class_values: a vector containing each unique class
 
         Returns:
             a matrix of weights representing the trained model
@@ -79,20 +78,33 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_v
     W: np.array = np.random.rand()
     model_error = np.inf
 
+    # generate a vector which transforms the vector of true classes for the
+    # training data into a vector of each true class' index
+    true_class_indices = np.searchsorted(class_values, Y_training)
+
     while model_error > epsilon:
 
-        # generate predictions using current weight matrix
-        predicted_classes = generate_class_predictions(X_training, W, class_values)
+        # generate predictions for each training instance using current weight matrix
+        prediction_matrix = np.dot(X_training, W.T)
 
-        # compute difference between true classes and predicted classes
-        class_error = np.linalg.norm(Y_training - predicted_classes)
+         # replace last column of prediction matrix with 1 - sum(row elements)
+        prediction_matrix[:,-1] = 1 - prediction_matrix[:,:-1].sum(axis=1)
 
-        # update W
-        W += eta * (np.multiply(X_training.T, class_error).T - np.multiply(lambda_hyperparameter, W))
+        # select 1 prediction from each row of the prediction_matrix such that the selected
+        # prediction is that for the class associated with the training instance
+        class_probabilities = prediction_matrix[np.arange(len(true_class_indices)), true_class_indices.ravel()]
 
-        # recompute error
-        predicted_classes = generate_class_predictions(X_training, W, class_values)
-        model_error = np.linalg.norm(Y_training - predicted_classes)
+        # since each probability is now the probability for the correct class of that
+        # training instance, we can subtract all probabilities from 1 to get the error
+        class_probabilities_error = 1 - class_probabilities
+
+        # multiply the error by X to construct the gradient
+        W += eta * (np.multiply(X_training.T, class_probabilities_error).T, - np.multiply(lambda_hyperparameter, W))
+
+        # recompute error - how to do this? conditional data log likelihood?
+        # TODO compute the error over the entire model and convert it to a float,
+        #   see page 11 of the LR reading from Tom Mitchell for one idea of how
+        #   to do this
 
     return W
 
