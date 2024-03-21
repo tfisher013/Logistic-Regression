@@ -4,6 +4,8 @@ import time
 import numpy as np
 from utils.consts import *
 from utils.process_audio_data import generate_target_csv
+eta = 0.05
+lambda_hyperparameter = 0.01
 
 
 
@@ -59,6 +61,21 @@ def generate_class_predictions(X: np.array, W: np.array, class_values: np.array)
     # value per row as a row index into the class_values matrix
     return np.take(class_values, np.argmax(prediction_matrix, axis=0))
 
+def generate_probability(z : float)->float :
+    return 1 / (1 + np.exp(-1*z))
+
+def vectorized_probability(matrix : np.array)-> np.array :
+    vectorized_probability_function = np.vectorize(generate_probability)
+    return vectorized_probability_function(matrix)
+
+def generate_one_hot(Y_training : np.array , x_shape  : tuple ) -> np.array :
+    one_hot = np.array([[]])
+
+    for i in Y_training:
+        one_hot = np.append(one_hot , [i]*x_shape[1] , axis= 0)
+    
+    return one_hot
+
 
 def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_values: np.array) -> np.array:
     """ Performs gradient descent using the provided training data, split between feature
@@ -75,32 +92,40 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_v
             a matrix of weights representing the trained model
     """
 
-    W: np.array = np.random.rand()
+    W: np.array = np.random.rand(Y_training.shape[0],X_training.shape[1])
     model_error = np.inf
 
     # generate a vector which transforms the vector of true classes for the
     # training data into a vector of each true class' index
     true_class_indices = np.searchsorted(class_values, Y_training)
-
+    print( X_training , W.T , true_class_indices)
     while model_error > epsilon:
 
         # generate predictions for each training instance using current weight matrix
-        prediction_matrix = np.dot(X_training, W.T)
+        prediction_matrix = np.multiply(W , X_training)
+        print(prediction_matrix , prediction_matrix.shape)
 
          # replace last column of prediction matrix with 1 - sum(row elements)
+        prediction_matrix = vectorized_probability(prediction_matrix)
         prediction_matrix[:,-1] = 1 - prediction_matrix[:,:-1].sum(axis=1)
+        print(prediction_matrix)
 
         # select 1 prediction from each row of the prediction_matrix such that the selected
         # prediction is that for the class associated with the training instance
-        class_probabilities = prediction_matrix[np.arange(len(true_class_indices)), true_class_indices.ravel()]
+        # print( prediction_matrix[np.arange(len(true_class_indices)), true_class_indices.ravel()] )
+        # class_probabilities = prediction_matrix[np.arange(len(true_class_indices)), true_class_indices.ravel()]
+
 
         # since each probability is now the probability for the correct class of that
         # training instance, we can subtract all probabilities from 1 to get the error
-        class_probabilities_error = 1 - class_probabilities
-
+        # print(class_probabilities_error , type(class_probabilities_error))
+        # print(type(X_training) , type(class_probabilities_error) , type(lambda_hyperparameter) , type(W))
+        one_hot_matrix = generate_one_hot(Y_training , X_training.shape)
+        Y_minus_P_hat = generate_one_hot(Y_training , X_training.shape) - prediction_matrix
         # multiply the error by X to construct the gradient
-        W += eta * (np.multiply(X_training.T, class_probabilities_error).T, - np.multiply(lambda_hyperparameter, W))
+        W += eta * (np.dot(X_training , Y_minus_P_hat).sum(axis =0  ), - np.dot(lambda_hyperparameter, W))
 
+        model_error =  one_hot_matrix  - vectorized_probability(np.multiply(W , X_training )) 
         # recompute error - how to do this? conditional data log likelihood?
         # TODO compute the error over the entire model and convert it to a float,
         #   see page 11 of the LR reading from Tom Mitchell for one idea of how
