@@ -3,7 +3,18 @@ import os
 import librosa
 import numpy as np
 from sklearn.decomposition import PCA
-from utils.consts import feature_file_dir
+from utils.consts import feature_file_dir,num_features,training,columns
+import glob
+import pandas as pd
+
+def combine_files_save_to_one(mode:str):
+    files = os.listdir(feature_file_dir)
+    df= pd.DataFrame( )
+    for file in files:
+        df = pd.concat([df , pd.read_csv(os.path.join(feature_file_dir , file) , header=None , names= columns , index_col= False) ])
+    df.to_csv(os.path.join(feature_file_dir  , f'{mode}.csv'))
+    return df
+
 
 
 def write_matrix_to_csv(file_path: str, mat: np.array, include_header: bool=False):
@@ -22,8 +33,8 @@ def write_matrix_to_csv(file_path: str, mat: np.array, include_header: bool=Fals
         # write header row for first file
         if include_header:
             write.writerow(['Feature-' + str(i+1) for i in range(len(np.squeeze(mat.flatten('F').reshape(1, -1))))])
-
-        write.writerow(np.squeeze(mat.flatten('F').reshape(1, -1)))
+        #succesfully tested with  print(np.append(np.squeeze(mat.flatten('F').reshape(1, -1)) , file_path.split("\\")[-1].split('-')[0]))
+        write.writerow(np.append(np.squeeze(mat.flatten('F').reshape(1, -1)) , file_path.split("\\")[-1].split('-')[0]))
 
 
 def generate_target_csv(target_path: str) -> str:
@@ -57,6 +68,7 @@ def generate_target_csv(target_path: str) -> str:
 
             # keep only the first 10 rows, and use PCA to keep only a subset of cols
             mcff_pca = pca.fit_transform(mcff[:10])
+            # print(target_path , mcff_pca)
 
             write_matrix_to_csv(csv_output_file_path, mcff_pca, training_file_idx == 0)
 

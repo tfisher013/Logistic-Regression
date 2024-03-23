@@ -16,3 +16,9 @@ feature_file_dir = 'feature_files'
 
 # the directory used to hold trained model files
 model_dir = 'models'
+
+training = 'train'
+
+testing = 'test'
+
+columns = list(range(0 , num_features+1))

@@ -3,7 +3,7 @@ import os
 import time
 import numpy as np
 from utils.consts import *
-from utils.process_audio_data import generate_target_csv
+from utils.process_audio_data import generate_target_csv , combine_files_save_to_one
 eta = 0.05
 lambda_hyperparameter = 0.01
 
@@ -62,7 +62,7 @@ def generate_class_predictions(X: np.array, W: np.array, class_values: np.array)
     return np.take(class_values, np.argmax(prediction_matrix, axis=0))
 
 def generate_probability(z : float)->float :
-    return 1 / (1 + np.exp(-1*z))
+    return np.exp(z) / (1 + np.exp(z))
 
 def vectorized_probability(matrix : np.array)-> np.array :
     vectorized_probability_function = np.vectorize(generate_probability)
@@ -77,7 +77,7 @@ def generate_one_hot(Y_training : np.array , x_shape  : tuple ) -> np.array :
     return one_hot
 
 
-def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_values: np.array) -> np.array:
+def updated_gradient_descent(X_training: np.array, Y_training: np.array) -> np.array:
     """ Performs gradient descent using the provided training data, split between feature
             values and associated classes
 
@@ -95,20 +95,22 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_v
     W: np.array = np.random.rand(Y_training.shape[0],X_training.shape[1])
     model_error = np.inf
 
-    # generate a vector which transforms the vector of true classes for the
-    # training data into a vector of each true class' index
-    true_class_indices = np.searchsorted(class_values, Y_training)
-    print( X_training , W.T , true_class_indices)
+    Y_training_one_hot_true = [] #has to includet he operation that does one hot encoding for the target classes of the given training samples
+
     while model_error > epsilon:
 
+        Matrix_of_weights_and_samples_product =  vectorized_probability(np.matmul(X_training ,  W.T))
+    
+        W += eta * np.matmul(X_training , Y_training_one_hot_true - Matrix_of_weights_and_samples_product )     
         # generate predictions for each training instance using current weight matrix
-        prediction_matrix = np.multiply(W , X_training)
+        prediction_matrix = vectorized_probability(np.matmul(X_training , W.T))
         print(prediction_matrix , prediction_matrix.shape)
 
-         # replace last column of prediction matrix with 1 - sum(row elements)
-        prediction_matrix = vectorized_probability(prediction_matrix)
         prediction_matrix[:,-1] = 1 - prediction_matrix[:,:-1].sum(axis=1)
-        print(prediction_matrix)
+        Logistic_Matrix  =  np.multiply(X_training , W.T)
+        model_error = np.multiply(Y_training_one_hot_true , Logistic_Matrix ) - np.log( 1 + np.exp( Logistic_Matrix ))
+
+ 
 
         # select 1 prediction from each row of the prediction_matrix such that the selected
         # prediction is that for the class associated with the training instance
@@ -120,18 +122,59 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, class_v
         # training instance, we can subtract all probabilities from 1 to get the error
         # print(class_probabilities_error , type(class_probabilities_error))
         # print(type(X_training) , type(class_probabilities_error) , type(lambda_hyperparameter) , type(W))
-        one_hot_matrix = generate_one_hot(Y_training , X_training.shape)
-        Y_minus_P_hat = generate_one_hot(Y_training , X_training.shape) - prediction_matrix
         # multiply the error by X to construct the gradient
-        W += eta * (np.dot(X_training , Y_minus_P_hat).sum(axis =0  ), - np.dot(lambda_hyperparameter, W))
-
-        model_error =  one_hot_matrix  - vectorized_probability(np.multiply(W , X_training )) 
         # recompute error - how to do this? conditional data log likelihood?
         # TODO compute the error over the entire model and convert it to a float,
         #   see page 11 of the LR reading from Tom Mitchell for one idea of how
         #   to do this
 
     return W
+def train_logistic_regression(training_data_dir: str):
+    """ Trains a logistic regression model using the training data in the provided
+            directory
+
+        Parameters:
+            training_data_dir: path to directory which contains training instances 
+                each organized into separate directories by class
+
+    """
+
+    # determine the number of classes
+    class_labels = []
+    for class_dir in os.listdir(training_data_dir):
+        if os.path.isdir(class_dir):
+            class_labels.append(class_dir)
+
+    # initialize weight matrix to zeros
+    W = np.zeros((len(class_labels), num_features))
+
+    # train one row of W per class
+    print(f'the contents of {training_data_dir} are {os.listdir(training_data_dir)}')
+    for idx, class_dir in enumerate(os.listdir(training_data_dir)):
+        class_dir_path = os.path.join(training_data_dir, class_dir)
+        if os.path.isdir(class_dir_path) and class_dir.startswith('.') == False:
+        
+            # generate CSV file using specified directory
+            class_csv_file = generate_target_csv(class_dir_path)
+        
+            # read CSV file into training instance matrix
+            # X_train_class = np.genfromtxt(class_csv_file, delimiter=',', skip_header=1)
+            # use gradient descent to set values of this row of W
+            # W[idx] = gradient_descent(X_train_class)
+    df_training = combine_files_save_to_one(training)
+    df_training = df_training.sample(frac = 1)
+    X_training =  df_training.drop(columns[-1] , axis= 1).to_numpy()
+    Y_training = df_training[columns[-1]]
+    print(X_training)
+    print(Y_training)
+
+    
+    # save model to file after training
+    # model_name = 'model' + str(int(time.time()))
+    # if not os.path.isdir('models'):
+    #     os.mkdir('models')
+    # np.savetxt(os.path.join(model_dir, model_name), W)
+
 
 
 ########################## OLD IMPLEMENTATION BELOW THIS LINE ##########################
@@ -158,7 +201,7 @@ def p_hat(X: np.array, W_i: np.array) -> float:
     return len(positive_pred_frac[positive_pred_frac > 0]) / len(positive_pred_frac)
 
 
-def train_logistic_regression(training_data_dir: str):
+def train_logistic_regression_old(training_data_dir: str):
     """ Trains a logistic regression model using the training data in the provided
             directory
 
@@ -231,6 +274,6 @@ def gradient_descent(X_training: np.array) -> np.array:
 
 if __name__ == '__main__':
 
-    train_logistic_regression('../data/train')
+    train_logistic_regression('data/train')
 
 
