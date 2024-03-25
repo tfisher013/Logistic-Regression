@@ -3,10 +3,12 @@ import os
 import time
 import numpy as np
 from utils.consts import *
-from utils.process_audio_data import generate_target_csv , combine_files_save_to_one
-eta = 0.05
-lambda_hyperparameter = 0.01
-
+from utils.process_audio_data import generate_target_csv , combine_files_save_to_one , generate_one_hot,standardize_columns , normalize_columns
+import math
+import pandas as pd
+import shutil
+from sklearn import metrics
+from numpy import linalg as LA
 
 
 def classify(x: np.array, W: np.array, class_values: np.array) -> np.array:
@@ -61,25 +63,23 @@ def generate_class_predictions(X: np.array, W: np.array, class_values: np.array)
     # value per row as a row index into the class_values matrix
     return np.take(class_values, np.argmax(prediction_matrix, axis=0))
 
-def generate_probability(z : float)->float :
-    return np.exp(z) / (1 + np.exp(z))
+def generate_probability(z ) :
+    return math.exp(z)
+def generate_probability_true(z):
+    return 1 
 
-def vectorized_probability(matrix : np.array)-> np.array :
-    vectorized_probability_function = np.vectorize(generate_probability)
+def vectorized_probability(matrix : np.array , mode : str)-> np.array :
+    # print(matrix)
+    if( mode == others):
+        vectorized_probability_function = np.vectorize(generate_probability)
+    else:
+        vectorized_probability_function = np.vectorize(generate_probability_true)
     return vectorized_probability_function(matrix)
 
-def generate_one_hot(Y_training : np.array , x_shape  : tuple ) -> np.array :
-    one_hot = np.array([[]])
 
-    for i in Y_training:
-        one_hot = np.append(one_hot , [i]*x_shape[1] , axis= 0)
-    
-    return one_hot
-
-
-def updated_gradient_descent(X_training: np.array, Y_training: np.array) -> np.array:
+def updated_gradient_descent(X_training: np.array, Y_training: np.array , Y_categories : np.array) -> np.array:
     """ Performs gradient descent using the provided training data, split between feature
-            values and associated classes
+            values and associated classe0.s
 
         Parameters:
             X_training: a matrix where each row represents a training instance without
@@ -92,24 +92,39 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array) -> np.a
             a matrix of weights representing the trained model
     """
 
-    W: np.array = np.random.rand(Y_training.shape[0],X_training.shape[1])
-    model_error = np.inf
+    W: np.array = np.random.rand(Y_categories.shape[0],X_training.shape[1])
+    model_error , iteration_count = np.inf , 0
 
-    Y_training_one_hot_true = [] #has to includet he operation that does one hot encoding for the target classes of the given training samples
+    while abs(model_error) > epsilon and  iteration_count < 50000:
 
-    while model_error > epsilon:
+        Matrix_of_samples_and_weights_product =  vectorized_probability(pd.DataFrame(np.matmul(X_training ,  W.T)).to_numpy() , 'others')
+        #change true target probability to 1/1+exp(X * W.T)
 
-        Matrix_of_weights_and_samples_product =  vectorized_probability(np.matmul(X_training ,  W.T))
-    
-        W += eta * np.matmul(X_training , Y_training_one_hot_true - Matrix_of_weights_and_samples_product )     
+        # indices_to_update = np.argmax(Y_training , axis = 1)
+        # print(indices_to_update)
+        # Matrix_of_samples_and_weights_product_true  = np.multiply( Y_training , vectorized_probability(pd.DataFrame(np.matmul(X_training , W.T)) , 'true'))
+        # print("before" )
+        # for i in Matrix_of_samples_and_weights_product_true:
+            # print(i)
+        # Matrix_of_samples_and_weights_product[list(range(len(indices_to_update))) , indices_to_update ] = Matrix_of_samples_and_weights_product_true[ list(range(len(indices_to_update))) , indices_to_update]
+        # print("after" ,  Matrix_of_samples_and_weights_product) 
+        
+        ### Commented to check ###
+        # print(Y_training.shape , Matrix_of_weights_and_samples_product.shape , X_training.shape)
+        # print("Matrix_of_weights_and_samples_product" , Matrix_of_weights_and_samples_product)
+        gradients = (np.matmul((Y_training - Matrix_of_samples_and_weights_product).T , X_training))
+        W += eta * gradients - eta*lambda_hyperparameter * W
         # generate predictions for each training instance using current weight matrix
-        prediction_matrix = vectorized_probability(np.matmul(X_training , W.T))
-        print(prediction_matrix , prediction_matrix.shape)
+        # prediction_matrix = vectorized_probability( standardize_columns(pd.DataFrame(np.matmul(X_training ,  W.T))) , mode = 'true')
 
-        prediction_matrix[:,-1] = 1 - prediction_matrix[:,:-1].sum(axis=1)
-        Logistic_Matrix  =  np.multiply(X_training , W.T)
-        model_error = np.multiply(Y_training_one_hot_true , Logistic_Matrix ) - np.log( 1 + np.exp( Logistic_Matrix ))
+        # print("prediction_matrix" , prediction_matrix)
 
+        # prediction_matrix[:,-1] = 1 - prediction_matrix[:,:-1].sum(axis=1)
+        # model_error = np.multiply(Y_training, prediction_matrix ) - np.log( 1 + np.exp(  prediction_matrix ))
+        # model_error = np.absolute(model_error)
+        model_error =  np.sum(gradients)
+        print("-"*10 , f"Loss : {np.sum(model_error) } ", "-"*10, f"Iteration  {iteration_count}")
+        model_error , iteration_count = np.sum(model_error) , iteration_count+1
  
 
         # select 1 prediction from each row of the prediction_matrix such that the selected
@@ -140,6 +155,9 @@ def train_logistic_regression(training_data_dir: str):
     """
 
     # determine the number of classes
+    #
+    if( os.path.exists(feature_file_dir)):
+        shutil.rmtree(feature_file_dir)
     class_labels = []
     for class_dir in os.listdir(training_data_dir):
         if os.path.isdir(class_dir):
@@ -163,12 +181,25 @@ def train_logistic_regression(training_data_dir: str):
             # W[idx] = gradient_descent(X_train_class)
     df_training = combine_files_save_to_one(training)
     df_training = df_training.sample(frac = 1)
-    X_training =  df_training.drop(columns[-1] , axis= 1).to_numpy()
-    Y_training = df_training[columns[-1]]
-    print(X_training)
-    print(Y_training)
 
-    
+    X_training =  df_training.drop(columns[-1] , axis= 1).to_numpy()
+    Y_training = df_training[columns[-1]].to_numpy()
+    Y_training_one_hot,Y_categories = generate_one_hot(Y_training)
+    print(Y_categories)
+
+    W_Trained = updated_gradient_descent(X_training = X_training , Y_training = Y_training_one_hot , Y_categories=Y_categories)
+    weights_df = pd.DataFrame(W_Trained , columns = columns[:-1])
+    weights_df.to_csv(feature_file_dir+"/model.csv")
+
+    result_indexes = np.argmax(np.matmul(X_training , W_Trained.T)-(lambda_hyperparameter/2)**2 * LA.norm(W_Trained) , axis = 1)
+    results = np.take( Y_categories , result_indexes)
+    print(Y_training , results)
+    testing_df = pd.DataFrame()
+    testing_df['acutal'],testing_df['predicted'] = Y_training , results
+    testing_df.to_csv("./predicted_output.csv")
+    print('-'*10 , "accuracy : " , metrics.accuracy_score( Y_training , results) , '-'*10)
+
+
     # save model to file after training
     # model_name = 'model' + str(int(time.time()))
     # if not os.path.isdir('models'):
