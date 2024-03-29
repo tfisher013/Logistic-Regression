@@ -11,6 +11,10 @@ lambda_hyperparameter = 0.0001
 # number of features extracted from audio files
 num_features = 40
 
+# the max number of iterations of gradient descent before
+# it is stopped
+max_iterations = 50000
+
 # the directory used to hold the feature CSV file
 feature_file_dir = 'feature_files'
 

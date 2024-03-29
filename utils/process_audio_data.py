@@ -4,13 +4,11 @@ import librosa
 import numpy as np
 from sklearn.decomposition import PCA
 from utils.consts import feature_file_dir,num_features,training,columns
-import glob
 import pandas as pd
 from sklearn import preprocessing 
-import sys
 
 
-def generate_one_hot(Y_training : np.array ) -> np.array :
+def generate_one_hot(Y_training: np.array ) -> np.array:
     """
     generate a one hot encoded 2d matrix for all the given targets in the training data set 
 
@@ -18,53 +16,46 @@ def generate_one_hot(Y_training : np.array ) -> np.array :
 
     url : https://stackoverflow.com/questions/58676588/how-do-i-one-hot-encode-an-array-of-strings-with-numpy 
     """
-    onehotencoder = preprocessing.OneHotEncoder(categories='auto' , sparse_output=False)
-    one_hot_array = onehotencoder.fit_transform( Y_training[: , np.newaxis])
-    return one_hot_array , onehotencoder.categories_[0]
+    onehotencoder = preprocessing.OneHotEncoder(categories='auto', sparse_output=False)
+    one_hot_array = onehotencoder.fit_transform( Y_training[:, np.newaxis])
+    return one_hot_array, onehotencoder.categories_[0]
     
 
-def standardize_columns(df : pd.DataFrame ) -> np.array :
+def standardize_columns(df: pd.DataFrame ) -> np.array:
     scaler = preprocessing.StandardScaler()
-    # print(df)
     df = scaler.fit_transform(df)
-    # print(df)
     return df
-def normalize_columns( df : pd.DataFrame) -> np.array :
+
+def normalize_columns(df: pd.DataFrame) -> np.array :
     return preprocessing.normalize(df)
 
-def combine_files_save_to_one(mode:str):
+def combine_files_save_to_one(mode: str) -> pd.DataFrame:
     files = os.listdir(feature_file_dir)
-    df= pd.DataFrame( )
+    df = pd.DataFrame( )
     for file in files:
-        df = pd.concat([df , pd.read_csv(os.path.join(feature_file_dir , file) , header=None , names= columns , index_col= False) ])
-    df_new = pd.DataFrame(normalize_columns(df.drop(columns=[columns[-2],columns[-1]] , axis=1) ), columns = columns[:-2])
+        df = pd.concat([df, pd.read_csv(os.path.join(feature_file_dir, file), 
+                                        header=None , names=columns, index_col= False)])
+    df_new = pd.DataFrame(normalize_columns(
+        df.drop(columns=[columns[-2], columns[-1]], axis=1)), columns=columns[:-2])
     df_new[columns[-1]] = list(df[columns[-1]]) 
     df_new[columns[-2]] = 1
     df = df_new
-    print(df)
-    df.to_csv(os.path.join(feature_file_dir  , f'{mode}.csv') , index_label=False)
+    df.to_csv(os.path.join(feature_file_dir, f'{mode}.csv'), index_label=False)
     return df
 
 
-
-def write_matrix_to_csv(file_path: str, mat: np.array, include_header: bool=False):
+def write_matrix_to_csv(file_path: str, mat: np.array):
     """ Writes the provided numpy array as a row in the provided CSV file by flattening
 
         Parameters:
             file_path: the path to the csv file to which the row should be written
             mat: a numpy array
-            include_header: whether or not to include a header in the write
     """
 
     with open(file_path, 'a', newline='') as f:
-
         write = csv.writer(f)
-
-        # write header row for first file
-        if include_header:
-            write.writerow(['Feature-' + str(i+1) for i in range(len(np.squeeze(mat.flatten('F').reshape(1, -1))))])
-        # print(np.append(np.squeeze(mat.flatten('F').reshape(1, -1)) ,[1 , file_path.split("\\")[-1].split('-')[0]]))
-        write.writerow(np.append(np.squeeze(mat.flatten('F').reshape(1, -1)) , [1, file_path.split("\\")[-1].split('-')[0]]))
+        write.writerow(np.append(np.squeeze(mat.flatten('F').reshape(1, -1)), 
+                                 [1, file_path.split("\\")[-1].split('-')[0]]))
 
 
 def generate_target_csv(target_path: str) -> str:
@@ -87,21 +78,17 @@ def generate_target_csv(target_path: str) -> str:
 
     pca = PCA(n_components=2)
 
-    for training_file_idx, training_file in enumerate(os.listdir(target_path)):
+    for training_file in os.listdir(target_path):
         training_file_path = os.path.join(target_path, training_file)
         if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
 
             audio_data, sample_rate = librosa.load(training_file_path)
 
-            # raw mcff data is of dimension (20 x 1293)
+            # extract mcff features
             mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
-            # print(mcff , mcff.shape)
-            # keep only the first 10 rows, and use PCA to keep only a subset of cols
             mcff_pca = pca.fit_transform(mcff)
-            # print(mcff_pca , mcff_pca.shape)
-            # print(target_path , mcff_pca)
 
-            write_matrix_to_csv(csv_output_file_path, mcff_pca, training_file_idx == 0)
+            write_matrix_to_csv(csv_output_file_path, mcff_pca)
 
     return csv_output_file_path
 
