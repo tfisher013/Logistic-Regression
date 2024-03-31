@@ -142,7 +142,7 @@ def train_logistic_regression(training_data_dir: str):
                                          Y_training=y_training_one_hot, 
                                          Y_categories=y_categories)
     
-    weights_df = pd.DataFrame(W_trained, columns=columns[:-1])
+    weights_df = pd.DataFrame(W_trained, columns=X_train.columns)
     weights_df.to_csv(feature_file_dir + '/model4.csv')
 
     result_indexes = np.argmax(np.matmul(X_train, W_trained.T) - 
