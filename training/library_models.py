@@ -14,20 +14,15 @@ from sklearn.naive_bayes import GaussianNB
 # gradient boosting imports
 from sklearn.ensemble import GradientBoostingClassifier
 
-from utils.process_audio_data import combine_files_save_to_one
+from utils.process_audio_data import create_test_train_split
 from utils.consts import training
 
-def train_library_random_forest():
+def train_library_random_forest(training_data_directory: str):
 
     print('Starting random forest classifier')
 
-    # get training data
-    training_df = combine_files_save_to_one(training)
-    Y = training_df[training_df.columns[-1]]
-    X = training_df.drop(training_df.columns[-1], axis=1)
-
     # perform train test split
-    X_train, X_test, Y_train, Y_test, = train_test_split(X, Y, stratify=Y)
+    X_train, X_test, Y_train, Y_test, = create_test_train_split(training_data_directory)
 
     # create classifier model for training data
     print('Creating classifier...')
@@ -40,17 +35,12 @@ def train_library_random_forest():
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_svm():
+def train_library_svm(training_data_directory: str):
 
     print('Starting SVM classifier')
 
-    # get training data
-    training_df = combine_files_save_to_one(training)
-    Y = training_df[training_df.columns[-1]]
-    X = training_df.drop(training_df.columns[-1], axis=1)
-
     # perform train test split
-    X_train, X_test, Y_train, Y_test, = train_test_split(X, Y, stratify=Y)
+    X_train, X_test, Y_train, Y_test, = create_test_train_split(training_data_directory)
 
     # create classifier model for training data
     print('Creating classifier...')
@@ -63,17 +53,12 @@ def train_library_svm():
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_naive_bayes():
+def train_library_naive_bayes(training_data_directory: str):
 
     print('Starting naive bayes classifier')
 
-    # get training data
-    training_df = combine_files_save_to_one(training)
-    Y = training_df[training_df.columns[-1]]
-    X = training_df.drop(training_df.columns[-1], axis=1)
-
     # perform train test split
-    X_train, X_test, Y_train, Y_test, = train_test_split(X, Y, stratify=Y)
+    X_train, X_test, Y_train, Y_test, = create_test_train_split(training_data_directory)
 
     # create classifier model for training data
     print('Creating classifier...')
@@ -86,17 +71,12 @@ def train_library_naive_bayes():
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_gradient_boosting():
+def train_library_gradient_boosting(training_data_directory: str):
 
     print('Starting gradient boosting classifier')
 
-    # get training data
-    training_df = combine_files_save_to_one(training)
-    Y = training_df[training_df.columns[-1]]
-    X = training_df.drop(training_df.columns[-1], axis=1)
-
     # perform train test split
-    X_train, X_test, Y_train, Y_test, = train_test_split(X, Y, stratify=Y)
+    X_train, X_test, Y_train, Y_test = create_test_train_split(training_data_directory)
 
     # create classifier model for training data
     print('Creating classifier...')
@@ -110,4 +90,4 @@ def train_library_gradient_boosting():
 
 
 if __name__== '__main__':
-    train_library_random_forest()
+    train_library_random_forest('data/train')

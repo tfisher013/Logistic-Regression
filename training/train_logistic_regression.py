@@ -64,76 +64,7 @@ def train_logistic_regression(training_data_dir: str):
 
     """
 
-    # determine the number of classes
-    if os.path.exists(feature_file_dir):
-        shutil.rmtree(feature_file_dir)
-    class_labels = []
-    for class_dir in os.listdir(training_data_dir):
-        if os.path.isdir(class_dir):
-            class_labels.append(class_dir)
-
-    # create dataframes to hold the combined train/test data
-    X_train = pd.DataFrame()
-    X_test = pd.DataFrame()
-    y_train = pd.DataFrame()
-    y_test = pd.DataFrame() 
-
-    print(f'the contents of {training_data_dir} are {os.listdir(training_data_dir)}')
-    for class_dir in os.listdir(training_data_dir):
-        class_dir_path = os.path.join(training_data_dir, class_dir)
-        if os.path.isdir(class_dir_path) and class_dir.startswith('.') == False:
-
-            # convert feature data to CSV and DataFrame formats
-            feature_data_file = generate_target_csv(class_dir_path)
-            feature_df = pd.read_csv(feature_data_file, header=None)
-
-            print(feature_df)
-
-            # perform train test split on feature data
-            feature_X_train, feature_X_test, feature_y_train, feature_y_test = train_test_split(
-                feature_df.drop(feature_df.columns[-1], axis=1), 
-                feature_df[feature_df.columns[-1]], 
-                test_size=0.2,
-                stratify=feature_df[feature_df.columns[-1]])
-            
-            # append feature train/test data to entire train/test data
-            X_train = pd.concat([X_train, feature_X_train], axis=0, ignore_index=True)
-            X_test = pd.concat([X_test, feature_X_test], axis=0, ignore_index=True)
-            y_train = pd.concat([y_train, feature_y_train], axis=0, ignore_index=True)
-            y_test = pd.concat([y_test, feature_y_test], axis=0, ignore_index=True)
-
-    print(f'1. dimension of X_train before standardization and PCA: {X_train.shape}')
-    print(X_train)
-
-    # standardize columns with distributions generated
-    # by training set
-    sc = StandardScaler()
-    X_train = pd.DataFrame(sc.fit_transform(X_train))
-    X_test = pd.DataFrame(sc.transform(X_test))
-
-    print(f'2. dimension of X_train after standardization: {X_train.shape}')
-    print(X_train)
-            
-    # perform PCA using features selected from training
-    # set
-    pca = PCA(n_components=0.8)
-    X_train = pd.DataFrame(pca.fit_transform(X_train))
-    X_test = pd.DataFrame(pca.transform(X_test))
-
-    # normalize data columnwise
-    X_train = pd.DataFrame(normalize_columns(X_train))
-    X_test = pd.DataFrame(normalize_columns(X_test))
-
-            
-    print(f'3. dimension of X_train after standardization and PCA: {X_train.shape}')
-    print(X_train)
-    print(y_train)
-
-    # add column of ones to X_train and X_test
-    X_train[len(X_train.columns)] = 1
-    X_test[len(X_test.columns)] = 1
-
-    ####### Feature processing complete, proceed as before #######
+    X_train, X_test, y_train, y_test = create_test_train_split(training_data_dir)
     
 
     y_training_one_hot, y_categories = generate_one_hot(y_train[0])
@@ -145,13 +76,13 @@ def train_logistic_regression(training_data_dir: str):
     weights_df = pd.DataFrame(W_trained, columns=X_train.columns)
     weights_df.to_csv(feature_file_dir + '/model4.csv')
 
-    result_indexes = np.argmax(np.matmul(X_train, W_trained.T) - 
+    result_indexes = np.argmax(np.matmul(X_test, W_trained.T) - 
                                ((lambda_hyperparameter / 2) ** 2) * LA.norm(W_trained), axis=1)
     results = np.take(y_categories, result_indexes)
     testing_df = pd.DataFrame()
-    testing_df['acutal'], testing_df['predicted'] = y_train, results
+    testing_df['acutal'], testing_df['predicted'] = y_test, results
     testing_df.to_csv('./predicted_output.csv')
-    print('-'*10, 'accuracy : ', metrics.accuracy_score(y_train, results), '-'*10)
+    print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test, results), '-'*10)
 
 
 if __name__ == '__main__':

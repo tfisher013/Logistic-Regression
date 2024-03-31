@@ -6,7 +6,101 @@ from sklearn.decomposition import PCA
 from utils.consts import feature_file_dir,num_features,training,columns
 import pandas as pd
 from sklearn import preprocessing 
+from  typing import Tuple
+import shutil
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
+
+def process_test_data(test_data_directory: str) -> pd.DataFrame:
+
+    test_df = pd.DataFrame()
+
+    for test_file in os.listdir(test_data_directory):
+        test_file_path = os.path.join(test_data_directory, test_file)
+        if os.path.isfile(test_file_path) and test_file_path.startswith('.') == False:
+
+            # convert feature data to CSV and DataFrame formats
+            feature_data_file = generate_target_csv(class_dir_path)
+            feature_df = pd.read_csv(feature_data_file, header=None)
+
+
+
+def create_test_train_split(training_data_directory: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    """
+
+    # remove any existing feature files
+    if os.path.exists(feature_file_dir):
+        shutil.rmtree(feature_file_dir)
+
+    # determine the number of classes
+    class_labels = []
+    for class_dir in os.listdir(training_data_directory):
+        if os.path.isdir(class_dir):
+            class_labels.append(class_dir)
+
+    # create dataframes to hold the combined train/test data
+    X_train = pd.DataFrame()
+    X_test = pd.DataFrame()
+    y_train = pd.DataFrame()
+    y_test = pd.DataFrame() 
+
+    print(f'the contents of {training_data_directory} are {os.listdir(training_data_directory)}')
+    for class_dir in os.listdir(training_data_directory):
+        class_dir_path = os.path.join(training_data_directory, class_dir)
+        if os.path.isdir(class_dir_path) and class_dir.startswith('.') == False:
+
+            # convert feature data to CSV and DataFrame formats
+            feature_data_file = generate_target_csv(class_dir_path)
+            feature_df = pd.read_csv(feature_data_file, header=None)
+
+            print(feature_df)
+
+            # perform train test split on feature data
+            feature_X_train, feature_X_test, feature_y_train, feature_y_test = train_test_split(
+                feature_df.drop(feature_df.columns[-1], axis=1), 
+                feature_df[feature_df.columns[-1]], 
+                test_size=0.2)
+            
+            # append feature train/test data to entire train/test data
+            X_train = pd.concat([X_train, feature_X_train], axis=0, ignore_index=True)
+            X_test = pd.concat([X_test, feature_X_test], axis=0, ignore_index=True)
+            y_train = pd.concat([y_train, feature_y_train], axis=0, ignore_index=True)
+            y_test = pd.concat([y_test, feature_y_test], axis=0, ignore_index=True)
+
+    print(f'1. dimension of X_train before standardization and PCA: {X_train.shape}')
+    print(X_train)
+
+    # standardize columns with distributions generated
+    # by training set
+    sc = StandardScaler()
+    X_train = pd.DataFrame(sc.fit_transform(X_train))
+    X_test = pd.DataFrame(sc.transform(X_test))
+
+    print(f'2. dimension of X_train after standardization: {X_train.shape}')
+    print(X_train)
+            
+    # perform PCA using features selected from training
+    # set
+    pca = PCA(n_components=0.95)
+    X_train = pd.DataFrame(pca.fit_transform(X_train))
+    X_test = pd.DataFrame(pca.transform(X_test))
+
+    # normalize data columnwise
+    X_train = pd.DataFrame(normalize_columns(X_train))
+    X_test = pd.DataFrame(normalize_columns(X_test))
+
+            
+    print(f'3. dimension of X_train after standardization and PCA: {X_train.shape}')
+    print(X_train)
+    print(y_train)
+
+    # add column of ones to X_train and X_test
+    X_train[len(X_train.columns)] = 1
+    X_test[len(X_test.columns)] = 1
+
+    return (X_train, X_test, y_train, y_test)
 
 def generate_one_hot(Y_training: np.array ) -> np.array:
     """
