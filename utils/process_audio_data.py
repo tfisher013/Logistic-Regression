@@ -17,7 +17,8 @@ def generate_one_hot(Y_training: np.array ) -> np.array:
     url : https://stackoverflow.com/questions/58676588/how-do-i-one-hot-encode-an-array-of-strings-with-numpy 
     """
     onehotencoder = preprocessing.OneHotEncoder(categories='auto', sparse_output=False)
-    one_hot_array = onehotencoder.fit_transform( Y_training[:, np.newaxis])
+    print(Y_training.to_numpy()[:, np.newaxis])
+    one_hot_array = onehotencoder.fit_transform( Y_training.to_numpy()[:, np.newaxis])
     return one_hot_array, onehotencoder.categories_[0]
     
 
@@ -31,7 +32,7 @@ def normalize_columns(df: pd.DataFrame) -> np.array :
 
 def combine_files_save_to_one(mode: str) -> pd.DataFrame:
     files = os.listdir(feature_file_dir)
-    df = pd.DataFrame( )
+    df = pd.DataFrame()
     for file in files:
         df = pd.concat([df, pd.read_csv(os.path.join(feature_file_dir, file), 
                                         header=None , names=columns, index_col= False)])
@@ -55,7 +56,10 @@ def write_matrix_to_csv(file_path: str, mat: np.array):
     with open(file_path, 'a', newline='') as f:
         write = csv.writer(f)
         write.writerow(np.append(np.squeeze(mat.flatten('F').reshape(1, -1)), 
-                                 [1, file_path.split("\\")[-1].split('-')[0]]))
+                                 [file_path.split("\\")[-1].split('-')[0]]))
+        
+        # print(f'  Writing row of length {len(np.append(np.squeeze(mat.flatten('F').reshape(1, -1)), 
+        #                          [1, file_path.split("\\")[-1].split('-')[0]]))}')
 
 
 def generate_target_csv(target_path: str) -> str:
@@ -76,7 +80,12 @@ def generate_target_csv(target_path: str) -> str:
         os.mkdir(feature_file_dir)
     csv_output_file_path = os.path.join(feature_file_dir, class_label + '-features.csv')
 
-    pca = PCA(n_components=2)
+    # I'm not sure why, but one of the disco files gives an mcff result with
+    # slightly more columns, even though the parameters are the same. Recording
+    # the typical shape of the output to trim any outliers.
+    max_rows = 0
+    max_cols = 0
+    first_file = True
 
     for training_file in os.listdir(target_path):
         training_file_path = os.path.join(target_path, training_file)
@@ -84,11 +93,21 @@ def generate_target_csv(target_path: str) -> str:
 
             audio_data, sample_rate = librosa.load(training_file_path)
 
-            # extract mcff features
+            # extract and write mcff features
             mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
-            mcff_pca = pca.fit_transform(mcff)
 
-            write_matrix_to_csv(csv_output_file_path, mcff_pca)
+            # record the standard mcff shape so all other files also
+            # share these dimensions
+            if first_file:
+                max_rows = mcff.shape[0]
+                max_cols = mcff.shape[1]
+                first_file = False
+
+            max_cols = 1200
+
+            write_matrix_to_csv(csv_output_file_path, mcff[:, :max_cols])
+            #print(f'  file {training_file} written to with shape { mcff[:max_rows, :max_cols].shape}')
+
 
     return csv_output_file_path
 

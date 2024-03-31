@@ -7,7 +7,10 @@ import math
 import pandas as pd
 import shutil
 from sklearn import metrics
+from sklearn.preprocessing import StandardScaler
 from numpy import linalg as LA
+from sklearn.model_selection import train_test_split
+from utils.process_audio_data import normalize_columns
 
 
 def vectorized_probability(matrix: np.array, mode : str)-> np.array :
@@ -69,35 +72,86 @@ def train_logistic_regression(training_data_dir: str):
         if os.path.isdir(class_dir):
             class_labels.append(class_dir)
 
-    # generate feature csv files
+    # create dataframes to hold the combined train/test data
+    X_train = pd.DataFrame()
+    X_test = pd.DataFrame()
+    y_train = pd.DataFrame()
+    y_test = pd.DataFrame() 
+
     print(f'the contents of {training_data_dir} are {os.listdir(training_data_dir)}')
     for class_dir in os.listdir(training_data_dir):
         class_dir_path = os.path.join(training_data_dir, class_dir)
         if os.path.isdir(class_dir_path) and class_dir.startswith('.') == False:
-            generate_target_csv(class_dir_path)
-        
-    df_training = combine_files_save_to_one(training)
-    df_training = df_training.sample(frac = 1)
 
-    X_training =  df_training.drop(columns[-1], axis= 1).to_numpy()
-    Y_training = df_training[columns[-1]].to_numpy()
-    Y_training_one_hot, Y_categories = generate_one_hot(Y_training)
+            # convert feature data to CSV and DataFrame formats
+            feature_data_file = generate_target_csv(class_dir_path)
+            feature_df = pd.read_csv(feature_data_file, header=None)
 
-    W_Trained = updated_gradient_descent(X_training=X_training, 
-                                         Y_training=Y_training_one_hot, 
-                                         Y_categories=Y_categories)
+            print(feature_df)
+
+            # perform train test split on feature data
+            feature_X_train, feature_X_test, feature_y_train, feature_y_test = train_test_split(
+                feature_df.drop(feature_df.columns[-1], axis=1), 
+                feature_df[feature_df.columns[-1]], 
+                test_size=0.2,
+                stratify=feature_df[feature_df.columns[-1]])
+            
+            # append feature train/test data to entire train/test data
+            X_train = pd.concat([X_train, feature_X_train], axis=0, ignore_index=True)
+            X_test = pd.concat([X_test, feature_X_test], axis=0, ignore_index=True)
+            y_train = pd.concat([y_train, feature_y_train], axis=0, ignore_index=True)
+            y_test = pd.concat([y_test, feature_y_test], axis=0, ignore_index=True)
+
+    print(f'1. dimension of X_train before standardization and PCA: {X_train.shape}')
+    print(X_train)
+
+    # standardize columns with distributions generated
+    # by training set
+    sc = StandardScaler()
+    X_train = pd.DataFrame(sc.fit_transform(X_train))
+    X_test = pd.DataFrame(sc.transform(X_test))
+
+    print(f'2. dimension of X_train after standardization: {X_train.shape}')
+    print(X_train)
+            
+    # perform PCA using features selected from training
+    # set
+    pca = PCA(n_components=0.8)
+    X_train = pd.DataFrame(pca.fit_transform(X_train))
+    X_test = pd.DataFrame(pca.transform(X_test))
+
+    # normalize data columnwise
+    X_train = pd.DataFrame(normalize_columns(X_train))
+    X_test = pd.DataFrame(normalize_columns(X_test))
+
+            
+    print(f'3. dimension of X_train after standardization and PCA: {X_train.shape}')
+    print(X_train)
+    print(y_train)
+
+    # add column of ones to X_train and X_test
+    X_train[len(X_train.columns)] = 1
+    X_test[len(X_test.columns)] = 1
+
+    ####### Feature processing complete, proceed as before #######
     
-    weights_df = pd.DataFrame(W_Trained, columns = columns[:-1])
-    weights_df.to_csv(feature_file_dir + '/model.csv')
 
-    result_indexes = np.argmax(np.matmul(X_training, W_Trained.T) - 
-                               ((lambda_hyperparameter / 2) ** 2) * LA.norm(W_Trained), axis=1)
-    results = np.take(Y_categories, result_indexes)
-    print(Y_training, results)
+    y_training_one_hot, y_categories = generate_one_hot(y_train[0])
+
+    W_trained = updated_gradient_descent(X_training=X_train, 
+                                         Y_training=y_training_one_hot, 
+                                         Y_categories=y_categories)
+    
+    weights_df = pd.DataFrame(W_trained, columns=columns[:-1])
+    weights_df.to_csv(feature_file_dir + '/model4.csv')
+
+    result_indexes = np.argmax(np.matmul(X_train, W_trained.T) - 
+                               ((lambda_hyperparameter / 2) ** 2) * LA.norm(W_trained), axis=1)
+    results = np.take(y_categories, result_indexes)
     testing_df = pd.DataFrame()
-    testing_df['acutal'],testing_df['predicted'] = Y_training, results
+    testing_df['acutal'], testing_df['predicted'] = y_train, results
     testing_df.to_csv('./predicted_output.csv')
-    print('-'*10, 'accuracy : ', metrics.accuracy_score(Y_training, results), '-'*10)
+    print('-'*10, 'accuracy : ', metrics.accuracy_score(y_train, results), '-'*10)
 
 
 if __name__ == '__main__':
