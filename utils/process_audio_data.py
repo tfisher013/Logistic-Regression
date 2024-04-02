@@ -12,19 +12,87 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 
+def perform_PCA_training(feature_matrix: pd.DataFrame, feature_extraction_method_name: str) -> np.array:
+    """
+    """
+
+    last_column = feature_matrix[feature_matrix.columns[-1]]
+    feature_matrix.drop(feature_matrix.columns[-1])
+
+    # first standardize data along columns
+    standardized_matrix, sc = standardize_columns(feature_matrix)
+
+    # perform PCA
+    pca = PCA()
+    pca.fit_transform(standardized_matrix)
+
+    # normalize by column
+    standardized_matrix = normalize_columns(standardized_matrix)
+
+    # update dictionary with data processing objects
+    feature_extraction_method_dict[feature_extraction_method_name] = [pca, sc]
+
+    return pd.concat([standardized_matrix, last_column], axis=1)
+
+def perform_PCA_testing(feature_matrix: pd.DataFrame, feature_extraction_method_name: str) -> np.array:
+    """
+    """
+
+    # first standardize data along columns
+    sc = feature_extraction_method_dict[feature_extraction_method_name][1]
+    standardized_matrix = scaler.transform(feature_matrix)
+
+    # perform PCA
+    pca = feature_extraction_method_dict[feature_extraction_method_name][0]
+    pca.transform(standardized_matrix)
+
+    # normalize by column
+    standardized_matrix = normalize_columns(standardized_matrix)
+
+    return standardized_matrix
+
+
 def process_test_data(test_data_directory: str) -> pd.DataFrame:
 
-    feature_data_file = generate_target_csv(test_data_directory)
-    X_test = pd.read_csv(feature_data_file, header=None)
-    X_test = X_test.drop(X_test.columns[-1] , axis = 1)
-    print(X_test)
-    X_test = pd.DataFrame(sc.transform(X_test))
-    X_test = pd.DataFrame(pca.transform(X_test))
-    X_test = pd.DataFrame(normalize_columns(X_test))
-    X_test[len(X_test.columns)] = 1
-    print(X_test)
+    # iterate over each file in the class
+    for training_file in os.listdir(class_dir_path):
+        training_file_path = os.path.join(class_dir_path, training_file)
+        if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
 
-    return X_test , os.listdir(test_data_directory)
+            audio_data, sample_rate = librosa.load(training_file_path)
+
+            # extract and write mcff features
+            mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
+
+            # record the standard mcff shape so all other files also
+            # share these dimensions
+            if first_file:
+                max_rows = mcff.shape[0]
+                max_cols = mcff.shape[1]
+                first_file = False
+
+            max_cols = 1200
+
+            #write_matrix_to_csv(os.path.join(feature_file_dir, class_label + '-mfcc-features.csv'), mcff[:, :max_cols]])
+            feature_extraction_method_df_list[0] = pd.concat([feature_extraction_method_df_list[0], 
+                                                                np.append(np.squeeze(mcff[:, :max_cols].flatten('F').reshape(1, -1)), 
+                                                                                    [file_path.split("\\")[-1].split('-')[0]])], axis=0)
+
+            # stft features
+            stft = librosa.stft(audio_data)
+            feature_extraction_method_df_list[1] = pd.concat([feature_extraction_method_df_list[1], 
+                                                                            np.append(np.squeeze(stft.flatten('F').reshape(1, -1)), 
+                                                                                                [file_path.split("\\")[-1].split('-')[0]])], axis=0)
+                                                                                                
+    # now that all samples have been written to file, process data
+    feature_extraction_method_df_list[0] = perform_PCA_testing(pd.DataFrame(feature_extraction_method_df_list[0], ignore_index=True), 'mfcc')
+    feature_extraction_method_df_list[1] = perform_PCA_testing(pd.DataFrame(feature_extraction_method_df_list[1], ignore_index=True), 'stft')
+
+    combined_feature_data = pd.concat([feature_extraction_method_df_list[0].drop(feature_extraction_method_df_list[0].columns[-1], inplace=True),
+                                       feature_extraction_method_df_list[1]], axis=1).to_numpy()
+    
+    return combined_feature_data
+
 
 
 def create_test_train_split(training_data_directory: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -118,7 +186,7 @@ def generate_one_hot(Y_training: np.array ) -> np.array:
 def standardize_columns(df: pd.DataFrame ) -> np.array:
     scaler = preprocessing.StandardScaler()
     df = scaler.fit_transform(df)
-    return df
+    return (df, scaler)
 
 def normalize_columns(df: pd.DataFrame) -> np.array :
     return preprocessing.normalize(df)
@@ -180,29 +248,52 @@ def generate_target_csv(target_path: str) -> str:
     max_cols = 0
     first_file = True
 
-    for training_file in os.listdir(target_path):
-        training_file_path = os.path.join(target_path, training_file)
-        if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
+    mfcc_df = pd.DataFrame()
+    stft_df = pd.DataFrame()
+    feature_extraction_method_df_list = [mcff_df, stft_df]
 
-            audio_data, sample_rate = librosa.load(training_file_path)
+    # iterate over each class directory
+    for class_dir in os.listdir(training_data_directory):
+            class_dir_path = os.path.join(training_data_directory, class_dir)
+            if os.path.isdir(class_dir_path) and class_dir.startswith('.') == False:
 
-            # extract and write mcff features
-            mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
+                # iterate over each file in the class
+                for training_file in os.listdir(class_dir_path):
+                    training_file_path = os.path.join(class_dir_path, training_file)
+                    if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
 
-            # record the standard mcff shape so all other files also
-            # share these dimensions
-            if first_file:
-                max_rows = mcff.shape[0]
-                max_cols = mcff.shape[1]
-                first_file = False
+                        audio_data, sample_rate = librosa.load(training_file_path)
 
-            max_cols = 1200
+                        # extract and write mcff features
+                        mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
 
-            write_matrix_to_csv(csv_output_file_path, mcff[:, :max_cols])
-            #print(f'  file {training_file} written to with shape { mcff[:max_rows, :max_cols].shape}')
+                        # record the standard mcff shape so all other files also
+                        # share these dimensions
+                        if first_file:
+                            max_rows = mcff.shape[0]
+                            max_cols = mcff.shape[1]
+                            first_file = False
 
+                        max_cols = 1200
 
-    return csv_output_file_path
+                        #write_matrix_to_csv(os.path.join(feature_file_dir, class_label + '-mfcc-features.csv'), mcff[:, :max_cols]])
+                        feature_extraction_method_df_list[0] = pd.concat([feature_extraction_method_df_list[0], 
+                                                                            np.append(np.squeeze(mcff[:, :max_cols].flatten('F').reshape(1, -1)), 
+                                                                                                [file_path.split("\\")[-1].split('-')[0]])], axis=0)
+
+                        # stft features
+                        stft = librosa.stft(audio_data)
+                        feature_extraction_method_df_list[1] = pd.concat([feature_extraction_method_df_list[1], 
+                                                                                        np.append(np.squeeze(stft.flatten('F').reshape(1, -1)), 
+                                                                                                            [file_path.split("\\")[-1].split('-')[0]])], axis=0)
+    # now that all samples have been written to file, process data
+    feature_extraction_method_df_list[0] = perform_PCA_training(pd.DataFrame(feature_extraction_method_df_list[0], ignore_index=True), 'mfcc')
+    feature_extraction_method_df_list[1] = perform_PCA_training(pd.DataFrame(feature_extraction_method_df_list[1], ignore_index=True), 'stft')
+
+    combined_feature_data = pd.concat([feature_extraction_method_df_list[0].drop(feature_extraction_method_df_list[0].columns[-1], inplace=True),
+                                       feature_extraction_method_df_list[1]], axis=1).to_numpy()
+    
+    return combined_feature_data
 
 
 

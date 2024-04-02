@@ -65,7 +65,8 @@ def train_logistic_regression(training_data_dir: str):
 
     """
 
-    X_train, X_test, y_train, y_test = create_test_train_split(training_data_dir)
+    X_combined_train = generate_target_csv(training_data_dir)
+    X_train, X_test, y_train, y_test = train_test_split(X_combined_train, stratify=X_combined_train.take([-1], axis=1))
     
 
     y_training_one_hot, y_categories = generate_one_hot(y_train[0])
@@ -80,11 +81,15 @@ def train_logistic_regression(training_data_dir: str):
     result_indexes = np.argmax(np.matmul(X_test, W_trained.T) - 
                                ((lambda_hyperparameter / 2) ** 2) * LA.norm(W_trained), axis=1)
     results = np.take(y_categories, result_indexes)
+
+    # for testing on train/test split
     testing_df = pd.DataFrame()
     testing_df['acutal'], testing_df['predicted'] = y_test, results
     testing_df.to_csv('./predicted_output.csv')
     print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test, results), '-'*10)
-    df_test,file_names = process_test_data('data/test')
+
+    # create predictions file
+    df_test, file_names = process_test_data('data/test')
     validate_model(W = W_trained , X_test = df_test.to_numpy() , y_categories = y_categories  , file_names= file_names)
 
     

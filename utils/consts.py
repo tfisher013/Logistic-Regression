@@ -42,3 +42,6 @@ sc = StandardScaler()
 
 #making pca global is good for same reasons
 pca = PCA(n_components=0.7)
+
+# dictionary to map PCA objects to featuresets
+feature_extraction_method_dict = dict()

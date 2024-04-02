@@ -16,6 +16,7 @@ def validate_model( W : np.array  , X_test: np.array , y_categories , file_names
 
     
     """
+
     result_indexes = np.argmax(np.matmul(X_test, W.T) - 
                                ((lambda_hyperparameter / 2) ** 2) * LA.norm(W), axis=1)
     results = np.take(y_categories, result_indexes)
