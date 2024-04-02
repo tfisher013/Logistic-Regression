@@ -3,7 +3,7 @@ import os
 import librosa
 import numpy as np
 from sklearn.decomposition import PCA
-from utils.consts import feature_file_dir,num_features,training,columns
+from utils.consts import feature_file_dir,num_features,training,columns , sc , pca
 import pandas as pd
 from sklearn import preprocessing 
 from  typing import Tuple
@@ -14,16 +14,17 @@ from sklearn.preprocessing import StandardScaler
 
 def process_test_data(test_data_directory: str) -> pd.DataFrame:
 
-    test_df = pd.DataFrame()
+    feature_data_file = generate_target_csv(test_data_directory)
+    X_test = pd.read_csv(feature_data_file, header=None)
+    X_test = X_test.drop(X_test.columns[-1] , axis = 1)
+    print(X_test)
+    X_test = pd.DataFrame(sc.transform(X_test))
+    X_test = pd.DataFrame(pca.transform(X_test))
+    X_test = pd.DataFrame(normalize_columns(X_test))
+    X_test[len(X_test.columns)] = 1
+    print(X_test)
 
-    for test_file in os.listdir(test_data_directory):
-        test_file_path = os.path.join(test_data_directory, test_file)
-        if os.path.isfile(test_file_path) and test_file_path.startswith('.') == False:
-
-            # convert feature data to CSV and DataFrame formats
-            feature_data_file = generate_target_csv(class_dir_path)
-            feature_df = pd.read_csv(feature_data_file, header=None)
-
+    return X_test , os.listdir(test_data_directory)
 
 
 def create_test_train_split(training_data_directory: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -61,7 +62,7 @@ def create_test_train_split(training_data_directory: str) -> tuple[pd.DataFrame,
             feature_X_train, feature_X_test, feature_y_train, feature_y_test = train_test_split(
                 feature_df.drop(feature_df.columns[-1], axis=1), 
                 feature_df[feature_df.columns[-1]], 
-                test_size=0.2)
+                test_size=0.01)
             
             # append feature train/test data to entire train/test data
             X_train = pd.concat([X_train, feature_X_train], axis=0, ignore_index=True)
@@ -74,7 +75,6 @@ def create_test_train_split(training_data_directory: str) -> tuple[pd.DataFrame,
 
     # standardize columns with distributions generated
     # by training set
-    sc = StandardScaler()
     X_train = pd.DataFrame(sc.fit_transform(X_train))
     X_test = pd.DataFrame(sc.transform(X_test))
 
@@ -83,7 +83,6 @@ def create_test_train_split(training_data_directory: str) -> tuple[pd.DataFrame,
             
     # perform PCA using features selected from training
     # set
-    pca = PCA(n_components=0.95)
     X_train = pd.DataFrame(pca.fit_transform(X_train))
     X_test = pd.DataFrame(pca.transform(X_test))
 

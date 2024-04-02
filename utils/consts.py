@@ -1,12 +1,14 @@
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 # the percentage error to allow before terminating
 # gradient descent
 epsilon = 0.001
 
 # step size used for gradient descent
-eta = 0.001
+eta = 0.01
 
 # regularization penalty
-lambda_hyperparameter = 0.0001
+lambda_hyperparameter = 0.001
 
 # number of features extracted from audio files
 num_features = 40
@@ -32,3 +34,11 @@ model = 'model.csv'
 others = 'others'
 
 true = 'true'
+
+feature_file_dir_test = 'feature_files_test'
+
+#making standardization global is good for transforming the real testing prediction data
+sc = StandardScaler()
+
+#making pca global is good for same reasons
+pca = PCA(n_components=0.7)

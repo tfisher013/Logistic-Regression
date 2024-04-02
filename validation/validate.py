@@ -1,5 +1,9 @@
 import numpy as np
-def validate_model( W : np.array  , X_testing : np.array , Weights_to_target_map : dict):
+from utils.consts import lambda_hyperparameter
+import pandas as pd
+from numpy import linalg as LA
+
+def validate_model( W : np.array  , X_test: np.array , y_categories , file_names : np.array ):
     """
     This function is used to validate a given model with weights : W
 
@@ -8,14 +12,20 @@ def validate_model( W : np.array  , X_testing : np.array , Weights_to_target_map
 
         W : a matrix of weights where each row represents a weight vector that is good enought to predict a class K 
          
+        y_categories : a array of ordered labels extracted from onehotencoder
+
     
     """
-    targets = np.array()
-    for testing_instance in X_testing:
-        aggregates = W * np.transpose(testing_instance)
-        max_index = np.argmax(aggregates)
-        targets.append(Weights_to_target_map.get(max_index))
-    return targets
+    result_indexes = np.argmax(np.matmul(X_test, W.T) - 
+                               ((lambda_hyperparameter / 2) ** 2) * LA.norm(W), axis=1)
+    results = np.take(y_categories, result_indexes)
+    predicted = pd.DataFrame()
+    predicted['id'] = file_names
+    predicted['class'] = results
+    print(predicted)
+    predicted.to_csv('predicted_results.csv' , index = False)
+    
+
 
 
 

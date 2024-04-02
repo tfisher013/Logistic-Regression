@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from numpy import linalg as LA
 from sklearn.model_selection import train_test_split
 from utils.process_audio_data import normalize_columns
+from validation.validate import validate_model
 
 
 def vectorized_probability(matrix: np.array, mode : str)-> np.array :
@@ -83,7 +84,10 @@ def train_logistic_regression(training_data_dir: str):
     testing_df['acutal'], testing_df['predicted'] = y_test, results
     testing_df.to_csv('./predicted_output.csv')
     print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test, results), '-'*10)
+    df_test,file_names = process_test_data('data/test')
+    validate_model(W = W_trained , X_test = df_test.to_numpy() , y_categories = y_categories  , file_names= file_names)
 
+    
 
 if __name__ == '__main__':
 
