@@ -41,18 +41,22 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categ
     model_error, iteration_count = np.inf, 0
 
     while abs(model_error) > epsilon and iteration_count < max_iterations:
-        # print(X_training.shape)
 
-        matrix_of_samples_and_weights_product = vectorized_probability(
-            pd.DataFrame(np.matmul(X_training, W.T)).to_numpy(), 'others')
+        # create matrix of prediction probabilities and normalize by columns
+        matrix_of_samples_and_weights_product = vectorized_probability(np.matmul(X_training, W.T), 'others')
+        matrix_of_samples_and_weights_product /= np.max(matrix_of_samples_and_weights_product, axis=1, keepdims=True)
 
         gradients = (np.matmul((Y_training - matrix_of_samples_and_weights_product).T, X_training))
         W += eta * gradients - eta * lambda_hyperparameter * W
 
-        model_error = np.sum(gradients)
-        model_error, iteration_count = np.sum(model_error), iteration_count+1
+        # compute model error as sum of squared errors between Y and Y_hat
+        prediction_matrix = np.matmul(X_training, W.T)
+        prediction_matrix /= np.max(prediction_matrix, axis=1, keepdims=True)
+        model_error = np.sum(np.linalg.matrix_power(Y_training - prediction_matrix, 2))
 
-        print("-"*10, f"Loss : {np.sum(model_error) } ", "-"*10, f"Iteration  {iteration_count}")
+        iteration_count += 1
+
+        print("-"*10, f"Loss : {model_error} ", "-"*10, f"Iteration  {iteration_count}")
 
     return W
 
