@@ -15,6 +15,7 @@ from validation.validate import validate_model
 
 
 def vectorized_probability(matrix: np.array, mode : str)-> np.array :
+    # print(matrix)
     if mode == others:
         return np.vectorize(lambda z: math.exp(z))(matrix)
     else:
@@ -40,6 +41,7 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categ
     model_error, iteration_count = np.inf, 0
 
     while abs(model_error) > epsilon and iteration_count < max_iterations:
+        # print(X_training.shape)
 
         matrix_of_samples_and_weights_product = vectorized_probability(
             pd.DataFrame(np.matmul(X_training, W.T)).to_numpy(), 'others')
@@ -65,17 +67,18 @@ def train_logistic_regression(training_data_dir: str):
 
     """
 
-    X_combined_train = generate_target_csv(training_data_dir)
-    X_train, X_test, y_train, y_test = train_test_split(X_combined_train, stratify=X_combined_train.take([-1], axis=1))
+    X_combined_train , Y_train = generate_target_csv(training_data_dir)
+    X_train, X_test, y_train, y_test = train_test_split(X_combined_train, Y_train  , test_size=0.1 , stratify= Y_train)
+    # print(X_train.shape)
     
 
-    y_training_one_hot, y_categories = generate_one_hot(y_train[0])
+    y_training_one_hot, y_categories = generate_one_hot(y_train)
 
     W_trained = updated_gradient_descent(X_training=X_train, 
                                          Y_training=y_training_one_hot, 
                                          Y_categories=y_categories)
     
-    weights_df = pd.DataFrame(W_trained, columns=X_train.columns)
+    weights_df = pd.DataFrame(W_trained, columns=[i for i in range(W_trained.shape[1])])
     weights_df.to_csv(feature_file_dir + '/model4.csv')
 
     result_indexes = np.argmax(np.matmul(X_test, W_trained.T) - 
