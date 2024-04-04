@@ -54,6 +54,7 @@ def perform_PCA_testing(feature_matrix: pd.DataFrame, feature_extraction_method_
 
 def process_test_data(test_data_directory: str) -> pd.DataFrame:
     file_names = []
+    first_file = True
     feature_extraction_method_df_list = [pd.DataFrame() , pd.DataFrame()] 
     class_dir_path = test_data_directory
     # iterate over each file in the class
@@ -93,8 +94,8 @@ def process_test_data(test_data_directory: str) -> pd.DataFrame:
             # print(feature_extraction_method_df_list[1].shape)
 
 # now that all samples have been written to file, process data
-        feature_extraction_method_df_list[0] = perform_PCA_testing(feature_extraction_method_df_list[0], 'mfcc')
-        feature_extraction_method_df_list[1] = perform_PCA_testing(librosa.amplitude_to_db(feature_extraction_method_df_list[1]), 'stft')
+    feature_extraction_method_df_list[0] = perform_PCA_testing(feature_extraction_method_df_list[0], 'mfcc')
+    feature_extraction_method_df_list[1] = perform_PCA_testing(librosa.amplitude_to_db(feature_extraction_method_df_list[1]), 'stft')
 
     combined_feature_data = np.append(feature_extraction_method_df_list[0] , feature_extraction_method_df_list[1], axis=1)
     

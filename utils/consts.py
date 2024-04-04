@@ -14,6 +14,23 @@ lambda_hyperparameter = 0.001
 num_features = 40
 
 # the max number of iterations of gradient descent before
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # it is stopped
 max_iterations = 50000
 

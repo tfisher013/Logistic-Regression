@@ -87,13 +87,13 @@ def train_logistic_regression(training_data_dir: str):
 
     # for testing on train/test split
     testing_df = pd.DataFrame()
-    testing_df['acutal'], testing_df['predicted'] = y_test, results
+    testing_df['acutal'], testing_df['predicted'] = y_test[:,0], results
     testing_df.to_csv('./predicted_output.csv')
-    print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test, results), '-'*10)
+    print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test[: , 0], results), '-'*10)
 
     # create predictions file
     df_test, file_names = process_test_data('data/test')
-    validate_model(W = W_trained , X_test = df_test.to_numpy() , y_categories = y_categories  , file_names= file_names)
+    validate_model(W = W_trained , X_test = df_test , y_categories = y_categories  , file_names= file_names)
 
     
 
