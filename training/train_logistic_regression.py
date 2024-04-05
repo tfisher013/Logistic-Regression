@@ -52,7 +52,7 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categ
         # compute model error as sum of squared errors between Y and Y_hat
         prediction_matrix = np.matmul(X_training, W.T)
         prediction_matrix /= np.max(prediction_matrix, axis=1, keepdims=True)
-        model_error = np.sum(np.linalg.matrix_power(Y_training - prediction_matrix, 2))
+        model_error = np.sum((Y_training - prediction_matrix) ** 2)
 
         iteration_count += 1
 
