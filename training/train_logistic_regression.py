@@ -43,16 +43,20 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categ
     while abs(model_error) > epsilon and iteration_count < max_iterations:
 
         # create matrix of prediction probabilities and normalize by columns
-        matrix_of_samples_and_weights_product = vectorized_probability(np.matmul(X_training, W.T), 'others')
+        X_cross_W = np.matmul(X_training, W.T)
+
+        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
         matrix_of_samples_and_weights_product /= np.max(matrix_of_samples_and_weights_product, axis=1, keepdims=True)
+        matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
 
         gradients = (np.matmul((Y_training - matrix_of_samples_and_weights_product).T, X_training))
         W += eta * gradients - eta * lambda_hyperparameter * W
 
         # compute model error as sum of squared errors between Y and Y_hat
-        prediction_matrix = np.matmul(X_training, W.T)
-        prediction_matrix /= np.max(prediction_matrix, axis=1, keepdims=True)
-        model_error = np.sum(np.linalg.matrix_power(Y_training - prediction_matrix, 2))
+        X_cross_W = np.matmul(X_training, W.T)
+        prediction_matrix = np.multiply(Y_training, X_cross_W) - np.log(1 + np.exp(X_cross_W))
+        #prediction_matrix /= np.max(prediction_matrix, axis=1, keepdims=True)
+        model_error = np.sum((Y_training - prediction_matrix) ** 2, axis=None)
 
         iteration_count += 1
 
@@ -71,10 +75,20 @@ def train_logistic_regression(training_data_dir: str):
 
     """
 
-    X_combined_train , Y_train = generate_target_csv(training_data_dir)
-    X_train, X_test, y_train, y_test = train_test_split(X_combined_train, Y_train  , test_size=0.1 , stratify= Y_train)
-    # print(X_train.shape)
-    
+    # 1. create a dataset of all test sample
+    # X, Y = create_combined_df(path)
+    X, Y = generate_target_csv(training_data_dir)
+
+    # 2. create train/test splits
+    # X_train, X_test, y_train, y_test = ...
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, stratify= Y) 
+
+    # 3. perform processing on each 
+    # X_train_processed = process_training(X_train)
+    X_train, X_test = perform_PCA_training(X_train, ''), perform_PCA_testing(X_test, '') 
+
+    # X_combined_train , Y_train = generate_target_csv(training_data_dir)
+    # X_train, X_test, y_train, y_test = train_test_split(X_combined_train, Y_train, test_size=0.3, stratify= Y_train)    
 
     y_training_one_hot, y_categories = generate_one_hot(y_train)
 
