@@ -17,7 +17,7 @@ from validation.validate import validate_model
 def vectorized_probability(matrix: np.array, mode : str)-> np.array :
     # print(matrix)
     if mode == others:
-        return np.vectorize(lambda z: math.exp(z))(matrix)
+        return np.divide(np.vectorize(lambda z: math.exp(z))(matrix), (1 + np.sum(matrix, axis=1).reshape(-1, 1)))
     else:
         return 1
 
@@ -44,19 +44,21 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categ
 
         # create matrix of prediction probabilities and normalize by columns
         X_cross_W = np.matmul(X_training, W.T)
-
+        X_cross_W /= np.max(X_cross_W, axis=1, keepdims=True)
         matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
-        matrix_of_samples_and_weights_product /= np.max(matrix_of_samples_and_weights_product, axis=1, keepdims=True)
         matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
 
         gradients = (np.matmul((Y_training - matrix_of_samples_and_weights_product).T, X_training))
         W += eta * gradients - eta * lambda_hyperparameter * W
-
+ 
         # compute model error as sum of squared errors between Y and Y_hat
         X_cross_W = np.matmul(X_training, W.T)
-        prediction_matrix = np.multiply(Y_training, X_cross_W) - np.log(1 + np.exp(X_cross_W))
+        X_cross_W /= np.max(X_cross_W, axis=1, keepdims=True)
+        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
+        matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
+        #prediction_matrix = np.multiply(Y_training, X_cross_W) - np.log(1 + np.exp(X_cross_W))
         #prediction_matrix /= np.max(prediction_matrix, axis=1, keepdims=True)
-        model_error = np.sum((Y_training - prediction_matrix) ** 2, axis=None)
+        model_error = np.sum((Y_training - matrix_of_samples_and_weights_product) ** 2, axis=None)
 
         iteration_count += 1
 
@@ -86,6 +88,19 @@ def train_logistic_regression(training_data_dir: str):
     # 3. perform processing on each 
     # X_train_processed = process_training(X_train)
     X_train, X_test = perform_PCA_training(X_train, ''), perform_PCA_testing(X_test, '') 
+
+    # X_train = np.array([[-1, -2],
+    #                    [-5, -6],
+    #                    [-7, -10],
+    #                    [-1, 5],
+    #                    [-5, -5],
+    #                    [-4, 1]])
+    
+    # y_train = np.array([0, 0, 0, 1, 1, 1]).reshape(-1, 1)
+
+    # X_test = np.array([[5, 0], [10, 2], [-10, -5]])
+    # y_test = np.array([0, 0, 1]).reshape(-1, 1)
+
 
     # X_combined_train , Y_train = generate_target_csv(training_data_dir)
     # X_train, X_test, y_train, y_test = train_test_split(X_combined_train, Y_train, test_size=0.3, stratify= Y_train)    

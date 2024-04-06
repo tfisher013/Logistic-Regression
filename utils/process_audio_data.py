@@ -172,9 +172,9 @@ def generate_target_csv(target_path: str) -> str:
                         audio_data, sample_rate = librosa.load(training_file_path)
 
                         # extract and write mcff features
-                        mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
-                        stft = librosa.stft(y=audio_data)
-                        spectral = librosa.feature.spectral_centroid(y=audio_data, sr=sample_rate)
+                        mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate / 2)
+                        #stft = librosa.stft(y=audio_data, n_fft=256, hop_length=1024)
+                        #spectral = librosa.feature.spectral_centroid(y=audio_data, sr=sample_rate)
 
                         # record the standard mcff shape so all other files also
                         # share these dimensions
@@ -184,34 +184,32 @@ def generate_target_csv(target_path: str) -> str:
                             max_cols = mcff.shape[1]
                             first_file = False
                             max_cols = 1200
-                            feature_extraction_method_df_list[0] = np.squeeze(mcff[:, :max_cols].flatten('F').reshape(1, -1)).reshape(-1,1).T
-                            feature_extraction_method_df_list[1] = np.squeeze(stft[: , : max_cols ].flatten('F').reshape(1, -1)).reshape(-1,1).T
+                            feature_extraction_method_df_list[0] = np.squeeze(mcff.flatten('F').reshape(1, -1)).reshape(-1,1).T
+                            #feature_extraction_method_df_list[1] = np.squeeze(stft.flatten('F').reshape(1, -1)).reshape(-1,1).T
                         else:
+                        
+                            max_cols_mfcc = min(feature_extraction_method_df_list[0].shape[1], mcff.shape[0] * mcff.shape[1])
+                            #max_cols_stft = min(feature_extraction_method_df_list[1].shape[1], stft.shape[0] * stft.shape[1])
 
-                        
-                        # print(np.squeeze(mcff[:, :max_cols].flatten('F').reshape(1, -1)).shape)
-                        
-                        #write_matrix_to_csv(os.path.join(feature_file_dir, class_label + '-mfcc-features.csv'), mcff[:, :max_cols]])
-                            feature_extraction_method_df_list[0] = np.append(feature_extraction_method_df_list[0], np.squeeze(mcff[:, :max_cols].flatten('F').reshape(1, -1)).reshape(-1,1).T , axis = 0) 
-                            # print(feature_extraction_method_df_list[0].shape)
-                            # print(targets.shape)                        
-                        # print(feature_extraction_method_df_list[0])
+                            feature_extraction_method_df_list[0] = np.append(feature_extraction_method_df_list[0][:, :max_cols_mfcc], 
+                                                                             np.squeeze(mcff.flatten('F').reshape(1, -1)).reshape(-1,1).T[:, :max_cols_mfcc], axis=0)
+                            # feature_extraction_method_df_list[1] = np.append(feature_extraction_method_df_list[1][:, :max_cols_stft],
+                            #                                                  np.squeeze(stft.flatten('F').reshape(1, -1)).reshape(-1,1).T[:, :max_cols_stft], axis=0)
+                            
+                        print(f'  mfcc.shape = ' + str(feature_extraction_method_df_list[0].shape))
+                        #print(f'  stft.shape = ' + str(feature_extraction_method_df_list[1].shape))
 
-                        # stft features
-                        
-                            feature_extraction_method_df_list[1] = np.append(feature_extraction_method_df_list[1], np.squeeze(stft[: , : max_cols ].flatten('F').reshape(1, -1)).reshape(-1,1).T , axis = 0 )
-                        # print(feature_extraction_method_df_list[1].shape)
                         targets = np.append(targets , training_file_path.split("\\")[-1].split('-')[0].split('.')[0])
     # now that all samples have been written to file, process data
     #feature_extraction_method_df_list[0] = perform_PCA_training(feature_extraction_method_df_list[0], 'mfcc')
     #feature_extraction_method_df_list[1] = perform_PCA_training(librosa.amplitude_to_db(feature_extraction_method_df_list[1]), 'stft')
-    feature_extraction_method_df_list[1] = librosa.amplitude_to_db(feature_extraction_method_df_list[1])
+    #feature_extraction_method_df_list[1] = librosa.amplitude_to_db(feature_extraction_method_df_list[1])
     targets = targets.reshape(-1,1)
-    # print(targets.shape)
 
-    combined_feature_data = np.append(feature_extraction_method_df_list[0], feature_extraction_method_df_list[1], axis=1)
+    #combined_feature_data = np.append(feature_extraction_method_df_list[0], feature_extraction_method_df_list[1], axis=1)
     
-    return np.append(combined_feature_data, np.ones(combined_feature_data.shape[0]).reshape(-1, 1), 1) , targets
+    #return np.append(combined_feature_data, np.ones(combined_feature_data.shape[0]).reshape(-1, 1), 1) , targets
+    return np.append(feature_extraction_method_df_list[0], np.ones(feature_extraction_method_df_list[0].shape[0]).reshape(-1, 1), axis=1) , targets
 
 
 

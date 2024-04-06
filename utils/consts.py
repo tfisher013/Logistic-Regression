@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 epsilon = 0.001
 
 # step size used for gradient descent
-eta = 0.001
+eta = 0.01
 
 # regularization penalty
 lambda_hyperparameter = 0.001
