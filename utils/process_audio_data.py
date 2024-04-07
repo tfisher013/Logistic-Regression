@@ -10,6 +10,168 @@ from  typing import Tuple
 import shutil
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+import random
+
+
+def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> tuple[np.array, np.array]:
+    """ Processes both training and kaggle data at once. Splits training data into train and test splits.
+        All train/test and kaggle data undergo standardization, PCA, and normalization.
+    """
+
+    # define the featureset functions
+    featureset_functions = [librosa.feature.zero_crossing_rate,
+                            librosa.feature.mfcc, 
+                            librosa.feature.chroma_stft, 
+                            librosa.feature.chroma_cqt,
+                            librosa.feature.spectral.spectral_contrast,
+                            librosa.feature.chroma_cens]
+
+    # create empty arrays to hold training and kaggle datasets
+    training_matrix_train = np.array([[]])
+    training_matrix_test = np.array([[]])
+    kaggle_matrix = np.array([[]])
+
+    # define empty array to hold the labels for the training matrix
+    training_matrix_labels = []
+
+    # define which row indices will be for training vs. testing; this needs to be done
+    # so the test train splits are for the same samples across all featuresets
+    num_classes = 10
+    num_samples_per_class = 90
+    test_size = 0.3
+    test_sample_indices = []
+    for class_idx in range(1, num_classes + 1):
+        new_indices = random.sample(range((class_idx - 1) * num_samples_per_class, class_idx * num_samples_per_class), int(test_size * num_samples_per_class))
+        test_sample_indices.extend(new_indices)
+    test_sample_indices = np.array(test_sample_indices)
+
+    # iterate over each featureset function
+    for featureset_idx, featureset_function in enumerate(featureset_functions):
+
+        print(f'Beginning featureset {featureset_idx + 1} of {len(featureset_functions)} ({str(featureset_function)})...')
+
+        # define empty arrays to hold just the features for this featureset
+        feature_training_matrix = np.array([[]])
+        feature_kaggle_matrix = np.array([[]])
+
+        # populate feature training matrix
+        for class_dir in os.listdir(training_data_dir):
+            class_dir_path = os.path.join(training_data_dir, class_dir)
+            if os.path.isdir(class_dir_path) and class_dir.startswith('.') == False:
+
+                print('  Beginning processing of class ' + class_dir)
+
+                max_cols = 0
+
+                # iterate over each file in the class
+                for training_file in os.listdir(class_dir_path):
+                    training_file_path = os.path.join(class_dir_path, training_file)
+                    if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
+
+
+                        audio_data, sample_rate = librosa.load(training_file_path)
+
+                        # use a try/except to handle differences in kwargs between
+                        # featureset functions
+                        featureset_feature_matrix = np.array([[]])
+                        try:
+                            featureset_feature_matrix = featureset_function(y=audio_data, sr=sample_rate)
+                        except TypeError:
+                            featureset_feature_matrix = featureset_function(y=audio_data)
+
+                        # trim columns as necessary and append flattened matrix row-wise
+                        if feature_training_matrix.size == 0:
+                            feature_training_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
+                        else:
+
+                            max_cols = min(featureset_feature_matrix.size, feature_training_matrix.shape[1])
+
+                            feature_training_matrix = np.append(
+                                feature_training_matrix[:, :max_cols],
+                                np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T[:, :max_cols],
+                                axis=0
+                            )
+
+                        if featureset_idx == 0:
+                            training_matrix_labels.append(class_dir)
+
+        # populate kaggle feature matrix
+        for kaggle_file in os.listdir(testing_data_dir):
+            kaggle_file_path = os.path.join(testing_data_dir, kaggle_file)
+            if os.path.isfile(kaggle_file_path) and kaggle_file_path.startswith('.') == False:
+
+                # ignore text file
+                if os.path.splitext(kaggle_file)[1] != '.au':
+                    continue
+
+                audio_data, sample_rate = librosa.load(kaggle_file_path)   
+
+                # use a try/except to handle differences in kwargs between
+                # featureset functions
+                featureset_feature_matrix = np.array([[]])
+                try:
+                    featureset_feature_matrix = featureset_function(y=audio_data, sr=sample_rate)
+                except TypeError:
+                    featureset_feature_matrix = featureset_function(y=audio_data)
+
+                # trim columns as necessary and append flattened matrix row-wise
+                if feature_kaggle_matrix.size == 0:
+                    feature_kaggle_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
+                else:
+                    max_cols = min(featureset_feature_matrix.size, feature_kaggle_matrix.shape[1])
+                    feature_kaggle_matrix = np.append(
+                        feature_kaggle_matrix[:, :max_cols],
+                        np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T[:, :max_cols],
+                        axis=0
+                    )
+
+        # at this point, feature_training_matrix and feature_kaggle_matrix should hold the unprocessed feature data
+
+        # training and kaggle matrices must have the same number of features for PCA to work correctly
+        max_cols = min(feature_training_matrix.shape[1], feature_kaggle_matrix.shape[1])
+        feature_training_matrix = feature_training_matrix[:, :max_cols]
+        feature_kaggle_matrix = feature_kaggle_matrix[:, :max_cols]
+
+        # perform train/test split on feature_training_matrix
+        training_matrix_labels = np.array(training_matrix_labels)
+        X_training = feature_training_matrix[~np.isin(np.arange(feature_training_matrix.shape[0]), test_sample_indices)]
+        X_testing = feature_training_matrix[test_sample_indices]
+
+        # fit PCA and SC objects on train split
+        sc = StandardScaler()
+        pca = PCA(n_components=0.8)
+        X_training = sc.fit_transform(X_training)
+        X_training = pca.fit_transform(X_training)
+
+        # transform test split and kaggle data on PCA and SC objects from above
+        X_testing = sc.transform(X_testing)
+        #kaggle_matrix = sc.transform(kaggle_matrix)
+        X_testing = pca.transform(X_testing)
+        feature_kaggle_matrix = pca.transform(feature_kaggle_matrix)
+
+        # normalize columns
+        X_training = preprocessing.normalize(X_training, axis = 1)
+        X_testing = preprocessing.normalize(X_testing, axis = 1)
+
+        # append this feature matrix columnwise to the combined matrix
+        if training_matrix_train.size == 0:
+            training_matrix_train = X_training
+            training_matrix_test = X_testing
+            kaggle_matrix = feature_kaggle_matrix
+        else:
+            training_matrix_train = np.append(training_matrix_train, X_training, axis=1)
+            training_matrix_test = np.append(training_matrix_test, X_testing, axis=1)
+            kaggle_matrix = np.append(kaggle_matrix, feature_kaggle_matrix, axis=1)
+
+    y_training = training_matrix_labels[~np.isin(np.arange(len(training_matrix_labels)), test_sample_indices)]
+    y_testing = training_matrix_labels[test_sample_indices]
+
+    # write resulting matrices to file
+    #np.append(training_matrix_train, y_training.reshape(-1, 1), axis=1).tofile('training_data_with_labels.csv', sep=',')
+    #np.append(training_matrix_test, y_testing.reshape(-1, 1), axis=1).tofile('testing_data_with_labels.csv', sep=',')
+    #kaggle_matrix.tofile('kaggle_data_features.csv', sep=',')
+
+    return (training_matrix_train, y_training, training_matrix_test, y_testing, kaggle_matrix)
 
 
 def perform_PCA_training(feature_matrix: pd.DataFrame, feature_extraction_method_name: str) -> np.array:
