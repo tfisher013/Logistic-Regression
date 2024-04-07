@@ -100,7 +100,8 @@ def process_test_data(test_data_directory: str) -> pd.DataFrame:
 
     combined_feature_data = np.append(feature_extraction_method_df_list[0] , feature_extraction_method_df_list[1], axis=1)
     
-    return np.append(combined_feature_data, np.ones(combined_feature_data.shape[0]).reshape(-1, 1), 1) , file_names
+    return combined_feature_data,  file_names
+    
 
 
 def generate_one_hot(Y_training: np.array ) -> np.array:
@@ -121,8 +122,10 @@ def standardize_columns(df: pd.DataFrame ) -> np.array:
     df = scaler.fit_transform(df)
     return (df, scaler)
 
-def normalize_columns(array : np.array) -> np.array :
+def normalize_row(array : np.array) -> np.array :
     return preprocessing.normalize(array , axis = 1)
+def normalize_columns(array : np.array ) -> np.array :
+    return preprocessing.normalize(array , axis = 0)
 
 
 def generate_target_csv(target_path: str) -> str:
@@ -209,7 +212,7 @@ def generate_target_csv(target_path: str) -> str:
     #combined_feature_data = np.append(feature_extraction_method_df_list[0], feature_extraction_method_df_list[1], axis=1)
     
     #return np.append(combined_feature_data, np.ones(combined_feature_data.shape[0]).reshape(-1, 1), 1) , targets
-    return np.append(feature_extraction_method_df_list[0], np.ones(feature_extraction_method_df_list[0].shape[0]).reshape(-1, 1), axis=1) , targets
+    return feature_extraction_method_df_list[0] , targets
 
 
 

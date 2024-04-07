@@ -15,11 +15,9 @@ from validation.validate import validate_model
 
 
 def vectorized_probability(matrix: np.array, mode : str)-> np.array :
-    # print(matrix)
-    if mode == others:
-        return np.divide(np.vectorize(lambda z: math.exp(z))(matrix), (1 + np.sum(matrix, axis=1).reshape(-1, 1)))
-    else:
-        return 1
+    # print(matrix)n
+    matrix = np.exp(normalize_row(matrix))
+    return matrix/np.sum(matrix , axis = 1 , keepdims=True)
 
 
 def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categories : np.array) -> np.array:
@@ -40,22 +38,24 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categ
     W: np.array = np.random.rand(Y_categories.shape[0], X_training.shape[1])
     model_error, iteration_count = np.inf, 0
 
-    while abs(model_error) > epsilon and iteration_count < max_iterations:
-
+    while model_error > epsilon  and iteration_count < max_iterations:
         # create matrix of prediction probabilities and normalize by columns
         X_cross_W = np.matmul(X_training, W.T)
-        X_cross_W /= np.max(X_cross_W, axis=1, keepdims=True)
+        X_cross_W = normalize_row(array=X_cross_W)
+        # X_cross_W[: , :-1] = 0
         matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
-        matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
+        # matrix_of_samples_and_weights_product /= np.max(matrix_of_samples_and_weights_product, axis=1, keepdims=True)
+        # print(matrix_of_samples_and_weights_product.shape , (1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)).shape)
+        # matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
 
         gradients = (np.matmul((Y_training - matrix_of_samples_and_weights_product).T, X_training))
-        W += eta * gradients - eta * lambda_hyperparameter * W
+        W += (1/Y_training.shape[0]) * eta * gradients - eta * lambda_hyperparameter * W
  
         # compute model error as sum of squared errors between Y and Y_hat
         X_cross_W = np.matmul(X_training, W.T)
-        X_cross_W /= np.max(X_cross_W, axis=1, keepdims=True)
-        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
-        matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
+        # X_cross_W /= np.max(X_cross_W, axis=1, keepdims=True)
+        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others') 
+        # matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
         #prediction_matrix = np.multiply(Y_training, X_cross_W) - np.log(1 + np.exp(X_cross_W))
         #prediction_matrix /= np.max(prediction_matrix, axis=1, keepdims=True)
         model_error = np.sum((Y_training - matrix_of_samples_and_weights_product) ** 2, axis=None)
@@ -87,7 +87,8 @@ def train_logistic_regression(training_data_dir: str):
 
     # 3. perform processing on each 
     # X_train_processed = process_training(X_train)
-    X_train, X_test = perform_PCA_training(X_train, ''), perform_PCA_testing(X_test, '') 
+    X_train = np.append(perform_PCA_training(X_train, ''), np.ones(X_train.shape[0]).reshape(-1, 1), 1) 
+    X_test = np.append(perform_PCA_testing(X_test, '') , np.ones(X_test.shape[0]).reshape(-1, 1), 1)
 
     # X_train = np.array([[-1, -2],
     #                    [-5, -6],

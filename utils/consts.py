@@ -5,10 +5,10 @@ from sklearn.decomposition import PCA
 epsilon = 0.001
 
 # step size used for gradient descent
-eta = 0.01
+eta = 0.07
 
 # regularization penalty
-lambda_hyperparameter = 0.001
+lambda_hyperparameter = 0.01
 
 # number of features extracted from audio files
 num_features = 40
