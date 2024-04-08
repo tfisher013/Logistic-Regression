@@ -10,13 +10,14 @@ from sklearn import metrics
 from sklearn.preprocessing import StandardScaler
 from numpy import linalg as LA
 from sklearn.model_selection import train_test_split
-from utils.process_audio_data import normalize_columns
+from utils.process_audio_data import normalize_columns,normalize_row
 from validation.validate import validate_model
-
+import sys
 
 def vectorized_probability(matrix: np.array, mode : str)-> np.array :
+    matrix = matrix - np.max(matrix , axis = 1 , keepdims=True )
     # print(matrix)n
-    matrix = np.exp(normalize_row(matrix))
+    matrix = np.exp(matrix)
     return matrix/np.sum(matrix , axis = 1 , keepdims=True)
 
 
@@ -41,7 +42,7 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categ
     while model_error > epsilon  and iteration_count < max_iterations:
         # create matrix of prediction probabilities and normalize by columns
         X_cross_W = np.matmul(X_training, W.T)
-        X_cross_W = normalize_row(array=X_cross_W)
+        # X_cross_W = (array=X_cross_W)
         # X_cross_W[: , :-1] = 0
         matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
         # matrix_of_samples_and_weights_product /= np.max(matrix_of_samples_and_weights_product, axis=1, keepdims=True)
@@ -79,17 +80,19 @@ def train_logistic_regression(training_data_dir: str):
 
     # 1. create a dataset of all test sample
     # X, Y = create_combined_df(path)
-    X, Y = generate_target_csv(training_data_dir)
+    X_train , y_train , X_test , y_test , kaggle = combined_data_processing('data/train' , 'data/test')
 
     # 2. create train/test splits
     # X_train, X_test, y_train, y_test = ...
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, stratify= Y) 
+    # X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, stratify= Y) 
 
     # 3. perform processing on each 
     # X_train_processed = process_training(X_train)
-    X_train = np.append(perform_PCA_training(X_train, ''), np.ones(X_train.shape[0]).reshape(-1, 1), 1) 
-    X_test = np.append(perform_PCA_testing(X_test, '') , np.ones(X_test.shape[0]).reshape(-1, 1), 1)
 
+    X_train = np.append(X_train, np.ones(X_train.shape[0]).reshape(-1, 1), 1) 
+    X_test = np.append(X_test  , np.ones(X_test.shape[0]).reshape(-1, 1), 1)
+    
+    kaggle = np.append( kaggle , np.ones(kaggle.shape[0]).reshape(-1, 1), 1)
     # X_train = np.array([[-1, -2],
     #                    [-5, -6],
     #                    [-7, -10],
@@ -106,7 +109,7 @@ def train_logistic_regression(training_data_dir: str):
     # X_combined_train , Y_train = generate_target_csv(training_data_dir)
     # X_train, X_test, y_train, y_test = train_test_split(X_combined_train, Y_train, test_size=0.3, stratify= Y_train)    
 
-    y_training_one_hot, y_categories = generate_one_hot(y_train)
+    y_training_one_hot, y_categories = generate_one_hot(y_train.reshape(-1,1))
 
     W_trained = updated_gradient_descent(X_training=X_train, 
                                          Y_training=y_training_one_hot, 
@@ -121,13 +124,12 @@ def train_logistic_regression(training_data_dir: str):
 
     # for testing on train/test split
     testing_df = pd.DataFrame()
-    testing_df['acutal'], testing_df['predicted'] = y_test[:,0], results
+    testing_df['acutal'], testing_df['predicted'] = y_test, results
     testing_df.to_csv('./predicted_output.csv')
-    print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test[: , 0], results), '-'*10)
-
+    print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test, results), '-'*10)
+    
     # create predictions file
-    df_test, file_names = process_test_data('data/test')
-    validate_model(W = W_trained , X_test = df_test , y_categories = y_categories  , file_names= file_names)
+    validate_model(W = W_trained , X_test = kaggle , y_categories = y_categories  , file_names= os.listdir('data/test'))
 
     
 
