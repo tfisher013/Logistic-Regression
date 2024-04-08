@@ -2,13 +2,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 # the percentage error to allow before terminating
 # gradient descent
-epsilon = 0.001
+epsilon = 0.1
 
 # step size used for gradient descent
-eta = 0.07
+eta = 0.001
 
 # regularization penalty
-lambda_hyperparameter = 0.01
+lambda_hyperparameter = 0.001
 
 # number of features extracted from audio files
 num_features = 40

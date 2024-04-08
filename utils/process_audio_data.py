@@ -9,7 +9,7 @@ from sklearn import preprocessing
 from  typing import Tuple
 import shutil
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler , RobustScaler
 import random
 
 
@@ -19,12 +19,15 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
     """
 
     # define the featureset functions
-    featureset_functions = [librosa.feature.zero_crossing_rate,
+    """commented for now"""
+    featureset_functions = [
+                            # librosa.feature.zero_crossing_rate,
                             librosa.feature.mfcc, 
-                            librosa.feature.chroma_stft, 
-                            librosa.feature.chroma_cqt,
+                            # librosa.feature.chroma_stft, 
+                            # librosa.feature.chroma_cqt,
                             librosa.feature.spectral.spectral_contrast,
-                            librosa.feature.chroma_cens]
+                            # librosa.feature.chroma_cens
+                            ]
 
     # create empty arrays to hold training and kaggle datasets
     training_matrix_train = np.array([[]])
@@ -38,7 +41,7 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
     # so the test train splits are for the same samples across all featuresets
     num_classes = 10
     num_samples_per_class = 90
-    test_size = 0.3
+    test_size = 0.1
     test_sample_indices = []
     for class_idx in range(1, num_classes + 1):
         new_indices = random.sample(range((class_idx - 1) * num_samples_per_class, class_idx * num_samples_per_class), int(test_size * num_samples_per_class))
@@ -69,7 +72,7 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
                     if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
 
 
-                        audio_data, sample_rate = librosa.load(training_file_path)
+                        audio_data, sample_rate = librosa.load(training_file_path , res_type='kaiser_best')
 
                         # use a try/except to handle differences in kwargs between
                         # featureset functions
@@ -104,7 +107,7 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
                 if os.path.splitext(kaggle_file)[1] != '.au':
                     continue
 
-                audio_data, sample_rate = librosa.load(kaggle_file_path)   
+                audio_data, sample_rate = librosa.load(kaggle_file_path , res_type='kaiser_best' )   
 
                 # use a try/except to handle differences in kwargs between
                 # featureset functions
@@ -139,19 +142,21 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
         # fit PCA and SC objects on train split
         sc = StandardScaler()
-        pca = PCA(n_components=0.8)
+        pca = PCA(n_components=0.95)
         X_training = sc.fit_transform(X_training)
         X_training = pca.fit_transform(X_training)
+        
 
         # transform test split and kaggle data on PCA and SC objects from above
         X_testing = sc.transform(X_testing)
         #kaggle_matrix = sc.transform(kaggle_matrix)
         X_testing = pca.transform(X_testing)
+        feature_kaggle_matrix = sc.transform(feature_kaggle_matrix)
         feature_kaggle_matrix = pca.transform(feature_kaggle_matrix)
 
         # normalize columns
-        X_training = preprocessing.normalize(X_training, axis = 1)
-        X_testing = preprocessing.normalize(X_testing, axis = 1)
+        # X_training = preprocessing.normalize(X_training, axis = 0)
+        # X_testing = preprocessing.normalize(X_testing, axis = 0)
 
         # append this feature matrix columnwise to the combined matrix
         if training_matrix_train.size == 0:
@@ -225,7 +230,7 @@ def process_test_data(test_data_directory: str) -> pd.DataFrame:
         training_file_path = os.path.join(class_dir_path, training_file)
         if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
 
-            audio_data, sample_rate = librosa.load(training_file_path)
+            audio_data, sample_rate = librosa.load(training_file_path , res_type='kaiser_fast')
 
             # extract and write mcff features
             mcff = librosa.feature.mfcc(y=audio_data, sr=sample_rate)
@@ -280,7 +285,7 @@ def generate_one_hot(Y_training: np.array ) -> np.array:
     
 
 def standardize_columns(df: pd.DataFrame ) -> np.array:
-    scaler = preprocessing.StandardScaler()
+    scaler = preprocessing.RobustScaler()
     df = scaler.fit_transform(df)
     return (df, scaler)
 
