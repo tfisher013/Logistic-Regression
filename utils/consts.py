@@ -32,7 +32,8 @@ num_features = 40
 
 
 # it is stopped
-max_iterations = 50000
+max_iterations = 500000
+
 
 # the directory used to hold the feature CSV file
 feature_file_dir = 'feature_files'

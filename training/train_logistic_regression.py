@@ -80,10 +80,10 @@ def train_logistic_regression(training_data_dir: str):
 
     # 1. create a dataset of all test sample
     # X, Y = create_combined_df(path)
-    X_train , y_train , X_test , y_test , kaggle = combined_data_processing('data/train' , 'data/test')
-
+    X_train , y_train , X_test , y_test , kaggle ,  mean_variance_train , mean_variance_test , feature_kaggle = combined_data_processing('data/train' , 'data/test')
     # 2. create train/test splits
     # X_train, X_test, y_train, y_test = ...
+    X_train , X_test , kaggle = mean_variance_train , mean_variance_test , feature_kaggle
     # X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, stratify= Y) 
 
     # 3. perform processing on each 

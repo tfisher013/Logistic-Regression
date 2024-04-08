@@ -11,7 +11,7 @@ import shutil
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler , RobustScaler
 import random
-
+import sys
 
 def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> tuple[np.array, np.array]:
     """ Processes both training and kaggle data at once. Splits training data into train and test splits.
@@ -33,6 +33,10 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
     training_matrix_train = np.array([[]])
     training_matrix_test = np.array([[]])
     kaggle_matrix = np.array([[]])
+    #new lines : prasanth 
+    mean_variance_train = np.array([[]])
+    mean_variance_kaggle = np.array([[]])
+    mean_variance_test = np.array([[]])
 
     # define empty array to hold the labels for the training matrix
     training_matrix_labels = []
@@ -56,6 +60,10 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
         # define empty arrays to hold just the features for this featureset
         feature_training_matrix = np.array([[]])
         feature_kaggle_matrix = np.array([[]])
+        #prasqanth
+        feature_mean_train_matrix = np.array([[]])
+        feature_mean_kaggle_matrix = np.array([[]])
+        feature_mean_test_matrix = np.array([[]])
 
         # populate feature training matrix
         for class_dir in os.listdir(training_data_dir):
@@ -84,8 +92,20 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
                         # trim columns as necessary and append flattened matrix row-wise
                         if feature_training_matrix.size == 0:
+                            #prasanth
+                            feature_mean_train_matrix = np.append(np.mean(featureset_feature_matrix , axis = 1  ) , np.var(featureset_feature_matrix , axis = 1))
+                            feature_mean_train_matrix = np.squeeze(feature_mean_train_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
+                            #prasanth
+
                             feature_training_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                         else:
+                            #prasanth
+                            feature_mean_train_matrix = np.append(feature_mean_train_matrix ,
+                                                                   np.squeeze(np.append(np.mean(featureset_feature_matrix , axis = 1  ) , 
+                                                                                                    np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T , axis =0)
+                            
+                            #prasanth
+
 
                             max_cols = min(featureset_feature_matrix.size, feature_training_matrix.shape[1])
 
@@ -119,8 +139,25 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
                 # trim columns as necessary and append flattened matrix row-wise
                 if feature_kaggle_matrix.size == 0:
+                    #prasanth
+                    feature_mean_kaggle_matrix = np.append(np.mean(featureset_feature_matrix , axis = 1  ) , np.var(featureset_feature_matrix , axis = 1))
+                    feature_mean_kaggle_matrix = np.squeeze(feature_mean_kaggle_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
+                    #prasanth
+
+
                     feature_kaggle_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                 else:
+
+
+                    #prasanth
+                    feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix ,
+                                                                   np.squeeze(np.append(np.mean(featureset_feature_matrix , axis = 1  ) , 
+                                                                                                    np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T , axis =0)
+                    #prasanth
+
+
+
+
                     max_cols = min(featureset_feature_matrix.size, feature_kaggle_matrix.shape[1])
                     feature_kaggle_matrix = np.append(
                         feature_kaggle_matrix[:, :max_cols],
@@ -140,6 +177,15 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
         X_training = feature_training_matrix[~np.isin(np.arange(feature_training_matrix.shape[0]), test_sample_indices)]
         X_testing = feature_training_matrix[test_sample_indices]
 
+
+        #prasanth 
+        mean_training = feature_mean_train_matrix[~np.isin(np.arange(feature_training_matrix.shape[0]), test_sample_indices)]
+        mean_testing = feature_mean_train_matrix[test_sample_indices]
+        #prasanth
+
+
+        #perform train/test split on feature_mean_train_matrix
+        print(feature_mean_train_matrix.shape)
         # fit PCA and SC objects on train split
         sc = StandardScaler()
         pca = PCA(n_components=0.95)
@@ -154,19 +200,45 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
         feature_kaggle_matrix = sc.transform(feature_kaggle_matrix)
         feature_kaggle_matrix = pca.transform(feature_kaggle_matrix)
 
+
+        #prasanth
+        sc = StandardScaler()
+        pca = PCA(n_components=0.95)
+        
+        mean_training = pca.fit_transform(sc.fit_transform(mean_training))
+        mean_testing = pca.transform(sc.transform(mean_testing))
+        mean_kaggle  = pca.transform(sc.transform(feature_mean_kaggle_matrix))
+        #prasanth
+
         # normalize columns
         # X_training = preprocessing.normalize(X_training, axis = 0)
         # X_testing = preprocessing.normalize(X_testing, axis = 0)
 
         # append this feature matrix columnwise to the combined matrix
         if training_matrix_train.size == 0:
+            #prasanth
+            mean_variance_train = mean_training
+            mean_variance_test= mean_testing
+            mean_variance_kaggle = mean_kaggle
+            #prasanth
+
+
             training_matrix_train = X_training
             training_matrix_test = X_testing
             kaggle_matrix = feature_kaggle_matrix
         else:
+            #prasanth
+            mean_variance_train = np.append(mean_variance_train , mean_training , axis = 1)
+            mean_variance_test = np.append(mean_variance_test , mean_testing , axis = 1)
+            mean_variance_kaggle = np.append(mean_variance_kaggle, mean_kaggle , axis = 1)
+            #prasanth
+
+
             training_matrix_train = np.append(training_matrix_train, X_training, axis=1)
             training_matrix_test = np.append(training_matrix_test, X_testing, axis=1)
             kaggle_matrix = np.append(kaggle_matrix, feature_kaggle_matrix, axis=1)
+    
+    # mean_variance_train , mean_variance_test , mean_train_y , mean_test_y = train_test_split(mean_variance_train , training_matrix_labels , test_size=0.3 , stratify=training_matrix_labels)
 
     y_training = training_matrix_labels[~np.isin(np.arange(len(training_matrix_labels)), test_sample_indices)]
     y_testing = training_matrix_labels[test_sample_indices]
@@ -175,8 +247,8 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
     #np.append(training_matrix_train, y_training.reshape(-1, 1), axis=1).tofile('training_data_with_labels.csv', sep=',')
     #np.append(training_matrix_test, y_testing.reshape(-1, 1), axis=1).tofile('testing_data_with_labels.csv', sep=',')
     #kaggle_matrix.tofile('kaggle_data_features.csv', sep=',')
-
-    return (training_matrix_train, y_training, training_matrix_test, y_testing, kaggle_matrix)
+    print(mean_variance_train.shape , mean_variance_test.shape , mean_variance_kaggle.shape)
+    return (training_matrix_train, y_training, training_matrix_test, y_testing, kaggle_matrix , mean_variance_train , mean_variance_test , mean_variance_kaggle)
 
 
 def perform_PCA_training(feature_matrix: pd.DataFrame, feature_extraction_method_name: str) -> np.array:
