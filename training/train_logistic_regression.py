@@ -40,30 +40,24 @@ def updated_gradient_descent(X_training: np.array, Y_training: np.array, Y_categ
     model_error, iteration_count = np.inf, 0
 
     while model_error > epsilon  and iteration_count < max_iterations:
-        # create matrix of prediction probabilities and normalize by columns
+
         X_cross_W = np.matmul(X_training, W.T)
-        # X_cross_W = (array=X_cross_W)
-        # X_cross_W[: , :-1] = 0
         matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
-        # matrix_of_samples_and_weights_product /= np.max(matrix_of_samples_and_weights_product, axis=1, keepdims=True)
-        # print(matrix_of_samples_and_weights_product.shape , (1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)).shape)
-        # matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
+
+        # use a step size "booster" which grows with certain iteration jumps
+        step_size_boost = max(1, iteration_count // 20000)
 
         gradients = (np.matmul((Y_training - matrix_of_samples_and_weights_product).T, X_training))
-        W += (1/Y_training.shape[0]) * eta * gradients - eta * lambda_hyperparameter * W
+        W += (1/Y_training.shape[0]) * step_size_boost * eta * gradients - eta * lambda_hyperparameter * W
  
         # compute model error as sum of squared errors between Y and Y_hat
         X_cross_W = np.matmul(X_training, W.T)
-        # X_cross_W /= np.max(X_cross_W, axis=1, keepdims=True)
         matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others') 
-        # matrix_of_samples_and_weights_product[:, -1] = 1 - np.sum(matrix_of_samples_and_weights_product[:, :-1], axis=1)
-        #prediction_matrix = np.multiply(Y_training, X_cross_W) - np.log(1 + np.exp(X_cross_W))
-        #prediction_matrix /= np.max(prediction_matrix, axis=1, keepdims=True)
         model_error = np.sum((Y_training - matrix_of_samples_and_weights_product) ** 2, axis=None)
 
         iteration_count += 1
 
-        print("-"*10, f"Loss : {model_error} ", "-"*10, f"Iteration  {iteration_count}")
+        print("-"*10, f"Loss : {model_error} ", "-"*10, f"Iteration  {iteration_count}", "-"*10, f"step boost: {step_size_boost}")
 
     return W
 
