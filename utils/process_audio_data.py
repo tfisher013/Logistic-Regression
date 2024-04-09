@@ -96,10 +96,16 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
                             feature_mean_train_matrix = np.squeeze(feature_mean_train_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                             feature_training_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                         else:
-                            feature_mean_train_matrix = np.append(feature_mean_train_matrix ,
-                                                                   np.squeeze(np.append(np.mean(featureset_feature_matrix , axis = 1  ) , 
-                                                                                                    np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T , axis =0)
+                            #prasanth
+                            dummy = np.append(np.mean(featureset_feature_matrix , axis = 1 , keepdims = True) , 
+                                                np.append(np.var(featureset_feature_matrix , axis = 1 , keepdims = True), 
+                                                                        np.append( np.max(featureset_feature_matrix , axis = 1 , keepdims = True), 
+                                                                                                np.min(featureset_feature_matrix, axis = 1 , keepdims=True) , axis = 1  ) , axis = 1  ) , axis = 1 )
+                            dummy = np.squeeze(dummy.flatten('F').reshape(1, -1)).reshape(-1,1).T
+                            feature_mean_train_matrix = np.append(feature_mean_train_matrix , dummy , axis = 0)
                             
+                            #prasanth
+
 
                             max_cols = min(featureset_feature_matrix.size, feature_training_matrix.shape[1])
 
@@ -133,13 +139,32 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
                 # trim columns as necessary and append flattened matrix row-wise
                 if feature_kaggle_matrix.size == 0:
-                    feature_mean_kaggle_matrix = np.append(np.mean(featureset_feature_matrix, axis=1), np.var(featureset_feature_matrix , axis = 1))
+                    #prasanth
+                    print(featureset_feature_matrix.shape)
+                    feature_mean_kaggle_matrix = np.append(np.mean(featureset_feature_matrix , axis = 1 , keepdims = True  ) , np.var(featureset_feature_matrix , axis = 1 , keepdims = True) , axis = 1)
+                    feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix , np.max(featureset_feature_matrix , axis = 1 , keepdims = True ) , axis = 1)
+                    feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix , np.min(featureset_feature_matrix, axis = 1 , keepdims = True) , axis = 1 )
                     feature_mean_kaggle_matrix = np.squeeze(feature_mean_kaggle_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                     feature_kaggle_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                 else:
-                    feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix ,
-                                                                   np.squeeze(np.append(np.mean(featureset_feature_matrix , axis = 1  ) , 
-                                                                                                    np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T, axis=0)
+
+
+                    #prasanth
+
+                    dummy = np.append(np.mean(featureset_feature_matrix , axis = 1, keepdims = True) , 
+                                            np.append( np.var(featureset_feature_matrix , axis = 1, keepdims = True) ,
+                                                                np.append( np.max(featureset_feature_matrix , axis = 1, keepdims = True) , 
+                                                                                            np.min(featureset_feature_matrix, axis = 1, keepdims = True) , axis = 1 ) , axis = 1), axis = 1)
+                    dummy = np.squeeze(dummy.flatten('F').reshape(1, -1)).reshape(-1,1).T
+                    feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix , dummy , axis = 0)
+                    # feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix ,
+                                                                #    np.squeeze(np.append(np.mean(featureset_feature_matrix , axis = 1  ) , 
+                                                                                                    # np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T , axis =0)
+                    #prasanth
+
+
+
+
                     max_cols = min(featureset_feature_matrix.size, feature_kaggle_matrix.shape[1])
                     feature_kaggle_matrix = np.append(
                         feature_kaggle_matrix[:, :max_cols],
