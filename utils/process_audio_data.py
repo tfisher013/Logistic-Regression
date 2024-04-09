@@ -6,34 +6,37 @@ from sklearn.decomposition import PCA
 from utils.consts import feature_file_dir,num_features,training,columns , sc , pca , feature_extraction_method_dict
 import pandas as pd
 from sklearn import preprocessing 
-from  typing import Tuple
-import shutil
+from  typing import Tuple, List
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler , RobustScaler
 import random
-import sys
+from sklearn.model_selection import StratifiedKFold
 
 def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> tuple[np.array, np.array]:
     """ Processes both training and kaggle data at once. Splits training data into train and test splits.
         All train/test and kaggle data undergo standardization, PCA, and normalization.
+
+        Parameters:
+            training_data_dir: the path to the directory containing training data
+            testing_data_dir: the path to the directory containing test (kaggle) data
+
+        Returns:
+
     """
 
     # define the featureset functions
-    """commented for now"""
-    featureset_functions = [
-                            # librosa.feature.zero_crossing_rate,
+    featureset_functions = [librosa.feature.zero_crossing_rate,
                             librosa.feature.mfcc, 
-                            # librosa.feature.chroma_stft, 
-                            # librosa.feature.chroma_cqt,
-                            librosa.feature.spectral.spectral_contrast,
-                            # librosa.feature.chroma_cens
-                            ]
-
+                            librosa.feature.chroma_stft, 
+                            librosa.feature.chroma_cqt,
+                            librosa.feature.spectral.spectral_contrast                                                                                                                                      ,
+                            librosa.feature.chroma_cens,
+                            librosa.feature.tonnetz]
+    
     # create empty arrays to hold training and kaggle datasets
     training_matrix_train = np.array([[]])
     training_matrix_test = np.array([[]])
     kaggle_matrix = np.array([[]])
-    #new lines : prasanth 
     mean_variance_train = np.array([[]])
     mean_variance_kaggle = np.array([[]])
     mean_variance_test = np.array([[]])
@@ -45,7 +48,7 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
     # so the test train splits are for the same samples across all featuresets
     num_classes = 10
     num_samples_per_class = 90
-    test_size = 0.1
+    test_size = 0.3
     test_sample_indices = []
     for class_idx in range(1, num_classes + 1):
         new_indices = random.sample(range((class_idx - 1) * num_samples_per_class, class_idx * num_samples_per_class), int(test_size * num_samples_per_class))
@@ -60,10 +63,8 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
         # define empty arrays to hold just the features for this featureset
         feature_training_matrix = np.array([[]])
         feature_kaggle_matrix = np.array([[]])
-        #prasqanth
         feature_mean_train_matrix = np.array([[]])
         feature_mean_kaggle_matrix = np.array([[]])
-        feature_mean_test_matrix = np.array([[]])
 
         # populate feature training matrix
         for class_dir in os.listdir(training_data_dir):
@@ -79,7 +80,6 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
                     training_file_path = os.path.join(class_dir_path, training_file)
                     if os.path.isfile(training_file_path) and training_file.startswith('.') == False:
 
-
                         audio_data, sample_rate = librosa.load(training_file_path , res_type='kaiser_best')
 
                         # use a try/except to handle differences in kwargs between
@@ -92,20 +92,14 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
                         # trim columns as necessary and append flattened matrix row-wise
                         if feature_training_matrix.size == 0:
-                            #prasanth
-                            feature_mean_train_matrix = np.append(np.mean(featureset_feature_matrix , axis = 1  ) , np.var(featureset_feature_matrix , axis = 1))
+                            feature_mean_train_matrix = np.append(np.mean(featureset_feature_matrix, axis=1), np.var(featureset_feature_matrix, axis=1))
                             feature_mean_train_matrix = np.squeeze(feature_mean_train_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
-                            #prasanth
-
                             feature_training_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                         else:
-                            #prasanth
                             feature_mean_train_matrix = np.append(feature_mean_train_matrix ,
                                                                    np.squeeze(np.append(np.mean(featureset_feature_matrix , axis = 1  ) , 
                                                                                                     np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T , axis =0)
                             
-                            #prasanth
-
 
                             max_cols = min(featureset_feature_matrix.size, feature_training_matrix.shape[1])
 
@@ -139,25 +133,13 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
                 # trim columns as necessary and append flattened matrix row-wise
                 if feature_kaggle_matrix.size == 0:
-                    #prasanth
-                    feature_mean_kaggle_matrix = np.append(np.mean(featureset_feature_matrix , axis = 1  ) , np.var(featureset_feature_matrix , axis = 1))
+                    feature_mean_kaggle_matrix = np.append(np.mean(featureset_feature_matrix, axis=1), np.var(featureset_feature_matrix , axis = 1))
                     feature_mean_kaggle_matrix = np.squeeze(feature_mean_kaggle_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
-                    #prasanth
-
-
                     feature_kaggle_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                 else:
-
-
-                    #prasanth
                     feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix ,
                                                                    np.squeeze(np.append(np.mean(featureset_feature_matrix , axis = 1  ) , 
-                                                                                                    np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T , axis =0)
-                    #prasanth
-
-
-
-
+                                                                                                    np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T, axis=0)
                     max_cols = min(featureset_feature_matrix.size, feature_kaggle_matrix.shape[1])
                     feature_kaggle_matrix = np.append(
                         feature_kaggle_matrix[:, :max_cols],
@@ -166,6 +148,7 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
                     )
 
         # at this point, feature_training_matrix and feature_kaggle_matrix should hold the unprocessed feature data
+
 
         # training and kaggle matrices must have the same number of features for PCA to work correctly
         max_cols = min(feature_training_matrix.shape[1], feature_kaggle_matrix.shape[1])
@@ -177,12 +160,8 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
         X_training = feature_training_matrix[~np.isin(np.arange(feature_training_matrix.shape[0]), test_sample_indices)]
         X_testing = feature_training_matrix[test_sample_indices]
 
-
-        #prasanth 
         mean_training = feature_mean_train_matrix[~np.isin(np.arange(feature_training_matrix.shape[0]), test_sample_indices)]
         mean_testing = feature_mean_train_matrix[test_sample_indices]
-        #prasanth
-
 
         #perform train/test split on feature_mean_train_matrix
         print(feature_mean_train_matrix.shape)
@@ -195,60 +174,65 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
         # transform test split and kaggle data on PCA and SC objects from above
         X_testing = sc.transform(X_testing)
-        #kaggle_matrix = sc.transform(kaggle_matrix)
         X_testing = pca.transform(X_testing)
         feature_kaggle_matrix = sc.transform(feature_kaggle_matrix)
         feature_kaggle_matrix = pca.transform(feature_kaggle_matrix)
 
-
-        #prasanth
         sc = StandardScaler()
-        pca = PCA(n_components=0.95)
+        pca = PCA(n_components=0.99)
         
         mean_training = pca.fit_transform(sc.fit_transform(mean_training))
         mean_testing = pca.transform(sc.transform(mean_testing))
         mean_kaggle  = pca.transform(sc.transform(feature_mean_kaggle_matrix))
-        #prasanth
 
-        # normalize columns
-        # X_training = preprocessing.normalize(X_training, axis = 0)
-        # X_testing = preprocessing.normalize(X_testing, axis = 0)
 
         # append this feature matrix columnwise to the combined matrix
         if training_matrix_train.size == 0:
-            #prasanth
             mean_variance_train = mean_training
             mean_variance_test= mean_testing
             mean_variance_kaggle = mean_kaggle
-            #prasanth
-
 
             training_matrix_train = X_training
             training_matrix_test = X_testing
             kaggle_matrix = feature_kaggle_matrix
         else:
-            #prasanth
             mean_variance_train = np.append(mean_variance_train , mean_training , axis = 1)
             mean_variance_test = np.append(mean_variance_test , mean_testing , axis = 1)
             mean_variance_kaggle = np.append(mean_variance_kaggle, mean_kaggle , axis = 1)
-            #prasanth
-
 
             training_matrix_train = np.append(training_matrix_train, X_training, axis=1)
             training_matrix_test = np.append(training_matrix_test, X_testing, axis=1)
             kaggle_matrix = np.append(kaggle_matrix, feature_kaggle_matrix, axis=1)
     
-    # mean_variance_train , mean_variance_test , mean_train_y , mean_test_y = train_test_split(mean_variance_train , training_matrix_labels , test_size=0.3 , stratify=training_matrix_labels)
-
     y_training = training_matrix_labels[~np.isin(np.arange(len(training_matrix_labels)), test_sample_indices)]
     y_testing = training_matrix_labels[test_sample_indices]
 
     # write resulting matrices to file
-    #np.append(training_matrix_train, y_training.reshape(-1, 1), axis=1).tofile('training_data_with_labels.csv', sep=',')
-    #np.append(training_matrix_test, y_testing.reshape(-1, 1), axis=1).tofile('testing_data_with_labels.csv', sep=',')
-    #kaggle_matrix.tofile('kaggle_data_features.csv', sep=',')
+    np.save('X_train', mean_variance_train)
+    np.save('X_test', mean_variance_test)
+    np.save('X_kaggle', mean_variance_kaggle)
+    np.save('y_train', y_training)
+    np.save('y_test', y_testing)
+
     print(mean_variance_train.shape , mean_variance_test.shape , mean_variance_kaggle.shape)
     return (training_matrix_train, y_training, training_matrix_test, y_testing, kaggle_matrix , mean_variance_train , mean_variance_test , mean_variance_kaggle)
+
+
+def create_k_fold_splits(n_splits: int) -> list[tuple[np.array, np.array, np.array, np.array]]:
+    """ Creates training/testing data splits based on the indices in the provided
+        StratifiedKFold parameter. Each train/test split will have different PCA
+        and standardization parameters, which is why this process is more complex
+        than simply dividing the results of one call to combined_data_processing().
+
+        Parameters:
+            n_splits: the number of k fold cross validation splits to return; must be
+                no smaller than one
+
+        Returns:
+
+    """
+
+    skf = StratifiedKFold(n_splits=n_splits)
 
 
 def perform_PCA_training(feature_matrix: pd.DataFrame, feature_extraction_method_name: str) -> np.array:
