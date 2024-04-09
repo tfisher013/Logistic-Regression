@@ -20,14 +20,13 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
     # define the featureset functions
     """commented for now"""
-    featureset_functions = [
-                            # librosa.feature.zero_crossing_rate,
+    featureset_functions = [librosa.feature.zero_crossing_rate,
                             librosa.feature.mfcc, 
-                            # librosa.feature.chroma_stft, 
-                            # librosa.feature.chroma_cqt,
+                            librosa.feature.chroma_stft, 
+                            librosa.feature.chroma_cqt,
                             librosa.feature.spectral.spectral_contrast,
-                            # librosa.feature.chroma_cens
-                            ]
+                            librosa.feature.chroma_cens,
+                            librosa.feature.tonnetz]
 
     # create empty arrays to hold training and kaggle datasets
     training_matrix_train = np.array([[]])
@@ -244,9 +243,10 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
     y_testing = training_matrix_labels[test_sample_indices]
 
     # write resulting matrices to file
-    #np.append(training_matrix_train, y_training.reshape(-1, 1), axis=1).tofile('training_data_with_labels.csv', sep=',')
-    #np.append(training_matrix_test, y_testing.reshape(-1, 1), axis=1).tofile('testing_data_with_labels.csv', sep=',')
-    #kaggle_matrix.tofile('kaggle_data_features.csv', sep=',')
+    np.save('X_train', mean_variance_train)
+    np.save('X_test', mean_variance_test)
+    np.save('X_kaggle', mean_variance_kaggle)
+    
     print(mean_variance_train.shape , mean_variance_test.shape , mean_variance_kaggle.shape)
     return (training_matrix_train, y_training, training_matrix_test, y_testing, kaggle_matrix , mean_variance_train , mean_variance_test , mean_variance_kaggle)
 
