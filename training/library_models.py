@@ -118,6 +118,13 @@ def library_model_hyperparameter_search():
 
 
 def train_library_random_forest(training_data_directory: str):
+    """ Trains sklearn's random forest model on our data pipeline and
+        shows the resulting accuracy
+
+        Parameters:
+            training_data_directory: the path to the directory containing
+                training data for the model
+    """
 
     print('Starting random forest classifier')
 
@@ -140,6 +147,13 @@ def train_library_random_forest(training_data_directory: str):
 
 
 def train_library_svm(training_data_directory: str):
+    """ Trains sklearn's SVM model on our data pipeline and
+        shows the resulting accuracy
+
+        Parameters:
+            training_data_directory: the path to the directory containing
+                training data for the model
+    """
 
     print('Starting SVM classifier')
 
@@ -162,6 +176,13 @@ def train_library_svm(training_data_directory: str):
 
 
 def train_library_naive_bayes(training_data_directory: str):
+    """ Trains sklearn's naive bayes model on our data pipeline and
+        shows the resulting accuracy
+
+        Parameters:
+            training_data_directory: the path to the directory containing
+                training data for the model
+    """
 
     print('Starting naive bayes classifier')
 
@@ -184,6 +205,13 @@ def train_library_naive_bayes(training_data_directory: str):
 
 
 def train_library_gradient_boosting(training_data_directory: str):
+    """ Trains sklearn's gradient boosting model on our data pipeline and
+        shows the resulting accuracy
+
+        Parameters:
+            training_data_directory: the path to the directory containing
+                training data for the model
+    """
 
     print('Starting gradient boosting classifier')
 
@@ -206,4 +234,7 @@ def train_library_gradient_boosting(training_data_directory: str):
 
 
 if __name__== '__main__':
+    """ Main function for testing
+    """
+    
     train_library_svm('data/train')
