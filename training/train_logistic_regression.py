@@ -2,6 +2,7 @@ import os
 import numpy as np
 from utils.consts import *
 from utils.process_audio_data import *
+from utils.file_utils import write_loss_to_file
 import pandas as pd
 from sklearn import metrics
 from numpy import linalg as LA
@@ -43,10 +44,13 @@ def gradient_descent(X_training: np.array, Y_training: np.array, Y_categories : 
     W: np.array = np.random.rand(Y_categories.shape[0], X_training.shape[1])
     model_error, iteration_count = np.inf, 0
 
+    # create list to hold loss at each iteration for making plots
+    loss_list = []
+
     while model_error > epsilon and iteration_count < max_iterations:
 
         X_cross_W = np.matmul(X_training, W.T)
-        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
+        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W)
 
         # use a step size "booster" which grows with certain iteration jumps
         step_size_boost = max(1, iteration_count // 20000)
@@ -56,12 +60,16 @@ def gradient_descent(X_training: np.array, Y_training: np.array, Y_categories : 
  
         # compute model error as sum of squared errors between Y and Y_hat
         X_cross_W = np.matmul(X_training, W.T)
-        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others') 
+        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W) 
         model_error = np.sum((Y_training - matrix_of_samples_and_weights_product) ** 2, axis=None)
 
         iteration_count += 1
 
         print("-"*10, f"Loss : {model_error} ", "-"*10, f"Iteration  {iteration_count}", "-"*10, f"step boost: {step_size_boost}")
+        loss_list.append(model_error)
+
+    # write the loss per iteration to file
+    write_loss_to_file(loss_list)
 
     return W
 
