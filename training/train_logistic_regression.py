@@ -77,8 +77,7 @@ def train_logistic_regression(training_data_dir: str):
     """
 
     # read and process audio data
-    X_train , y_train , X_test , y_test , kaggle ,  mean_variance_train , mean_variance_test , feature_kaggle = combined_data_processing('data/train' , 'data/test')
-    X_train , X_test , kaggle = mean_variance_train , mean_variance_test , feature_kaggle
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing('data/train', 'data/test')
 
     # replace the two lines above with these if the data has been written to  file 
     #X_train = np.load('X_train.npy')

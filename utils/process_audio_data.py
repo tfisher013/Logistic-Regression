@@ -29,7 +29,7 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
                             librosa.feature.mfcc, 
                             librosa.feature.chroma_stft, 
                             librosa.feature.chroma_cqt,
-                            librosa.feature.spectral.spectral_contrast                                                                                                                                      ,
+                            librosa.feature.spectral.spectral_contrast,
                             librosa.feature.chroma_cens,
                             librosa.feature.tonnetz]
     
@@ -92,7 +92,13 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
 
                         # trim columns as necessary and append flattened matrix row-wise
                         if feature_training_matrix.size == 0:
-                            feature_mean_train_matrix = np.append(np.mean(featureset_feature_matrix, axis=1), np.var(featureset_feature_matrix, axis=1))
+                            feature_mean_train_matrix = np.mean(featureset_feature_matrix, axis=1)
+                            feature_mean_train_matrix = np.append(feature_mean_train_matrix,
+                                                                  np.var(featureset_feature_matrix, axis=1))
+                            feature_mean_train_matrix = np.append(feature_mean_train_matrix,
+                                                                  np.max(featureset_feature_matrix, axis=1))
+                            feature_mean_train_matrix = np.append(feature_mean_train_matrix,
+                                                                  np.min(featureset_feature_matrix, axis=1))
                             feature_mean_train_matrix = np.squeeze(feature_mean_train_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                             feature_training_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                         else:
@@ -240,24 +246,7 @@ def combined_data_processing(training_data_dir: str, testing_data_dir: str) -> t
     np.save('y_test', y_testing)
 
     print(mean_variance_train.shape , mean_variance_test.shape , mean_variance_kaggle.shape)
-    return (training_matrix_train, y_training, training_matrix_test, y_testing, kaggle_matrix , mean_variance_train , mean_variance_test , mean_variance_kaggle)
-
-
-def create_k_fold_splits(n_splits: int) -> list[tuple[np.array, np.array, np.array, np.array]]:
-    """ Creates training/testing data splits based on the indices in the provided
-        StratifiedKFold parameter. Each train/test split will have different PCA
-        and standardization parameters, which is why this process is more complex
-        than simply dividing the results of one call to combined_data_processing().
-
-        Parameters:
-            n_splits: the number of k fold cross validation splits to return; must be
-                no smaller than one
-
-        Returns:
-
-    """
-
-    skf = StratifiedKFold(n_splits=n_splits)
+    return (mean_variance_train, mean_variance_test, y_training, y_testing, mean_variance_kaggle)
 
 
 def perform_PCA_training(feature_matrix: pd.DataFrame, feature_extraction_method_name: str) -> np.array:
