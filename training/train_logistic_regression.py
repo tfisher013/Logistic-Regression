@@ -110,6 +110,9 @@ def train_logistic_regression(training_data_dir: str):
 
     # for testing on train/test split
     print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test, results), '-'*10)
+
+    # calculate recall
+    print(f'Model recall: {metrics.recall_score(y_test, results, average="micro")}')
     
     # create predictions file for kaggle
     validate_model(W=W_trained, X_test=kaggle, y_categories=y_categories, file_names=os.listdir('data/test'))
