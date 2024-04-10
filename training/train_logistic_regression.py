@@ -46,7 +46,7 @@ def gradient_descent(X_training: np.array, Y_training: np.array, Y_categories : 
     while model_error > epsilon and iteration_count < max_iterations:
 
         X_cross_W = np.matmul(X_training, W.T)
-        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others')
+        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W)
 
         # use a step size "booster" which grows with certain iteration jumps
         step_size_boost = max(1, iteration_count // 20000)
@@ -56,7 +56,7 @@ def gradient_descent(X_training: np.array, Y_training: np.array, Y_categories : 
  
         # compute model error as sum of squared errors between Y and Y_hat
         X_cross_W = np.matmul(X_training, W.T)
-        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W, 'others') 
+        matrix_of_samples_and_weights_product = vectorized_probability(X_cross_W) 
         model_error = np.sum((Y_training - matrix_of_samples_and_weights_product) ** 2, axis=None)
 
         iteration_count += 1
