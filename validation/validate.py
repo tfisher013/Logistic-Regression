@@ -75,7 +75,7 @@ def plot_confusion_matrix( actual_results : np.array , predicted_results : np.ar
                     color="white" if conf_matrix[i, j] > thresh else "black")
                     
     figure.tight_layout()
-    plt.savefig('confusion_matrix.png')
+    plt.savefig('plots/confusion_matrix.png')
     # plt.show()
     
     return conf_matrix
