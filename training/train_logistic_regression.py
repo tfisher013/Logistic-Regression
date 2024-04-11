@@ -77,7 +77,6 @@ def gradient_descent(X_training: np.array, Y_training: np.array, Y_categories : 
 def train_logistic_regression():
     """ Trains a logistic regression model using the training data in the provided
         directory
-
     """
 
     # read and process audio data
@@ -107,24 +106,15 @@ def train_logistic_regression():
     weights_df = pd.DataFrame(W_trained, columns=[i for i in range(W_trained.shape[1])])
     weights_df.to_csv(model_dir + '/model.csv')
 
-    # generate accuracy on test split
-    # result_indexes = np.argmax(np.matmul(X_test, W_trained.T) - 
-    #                            ((lambda_hyperparameter / 2) ** 2) * LA.norm(W_trained), axis=1)
-    
-
+    # generate class predictions for testing split of data
     result_indexes = np.argmax(np.matmul(X_test, W_trained.T)  , axis =1 )
     results = np.take(y_categories, result_indexes)
-
-    # for testing on train/test split
     print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test, results), '-'*10)
 
-
-    # calculate recall
+    # calculate model recall
     print(f'Model recall: {metrics.recall_score(y_test, results, average="micro")}')
 
     plot_confusion_matrix( y_test , results , y_categories)
-    
-
     
     # create predictions file for kaggle
     validate_model(W=W_trained, X_test=kaggle, y_categories=y_categories, file_names=os.listdir(testing_data_path))
