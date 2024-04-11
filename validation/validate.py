@@ -17,6 +17,7 @@ def validate_model( W : np.array  , X_test: np.array , y_categories , file_names
          
         y_categories : a array of ordered labels extracted from onehotencoder
 
+        file_names: the names of the files containing the testing data
     
     """
     print( X_test.shape , W.shape)
@@ -28,7 +29,7 @@ def validate_model( W : np.array  , X_test: np.array , y_categories , file_names
     predicted['id'] = file_names
     predicted['class'] = results
     print(predicted)
-    predicted.to_csv('predicted_results.csv' , index = False)
+    predicted.to_csv('kaggle_predictions.csv' , index = False)
     
 
 def plot_confusion_matrix( actual_results : np.array , predicted_results : np.array , classes : np.array ):
