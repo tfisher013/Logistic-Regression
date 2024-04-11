@@ -80,7 +80,7 @@ def train_logistic_regression():
     """
 
     # read and process audio data
-    X_train, X_test, y_train, y_test, kaggle = combined_data_processing('data/train', 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     # replace the two lines above with these if the data has been written to  file 
     #X_train = np.load('X_train.npy')
