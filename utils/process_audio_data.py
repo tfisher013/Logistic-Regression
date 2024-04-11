@@ -13,7 +13,12 @@ def combined_data_processing() -> tuple[np.array, np.array]:
         All train/test and kaggle data undergo standardization, PCA, and normalization.
 
         Returns:
-
+            a tuple of numpy arrays representing the following values:
+                training features
+                testing features
+                training labels
+                testing labels
+                kaggle features
     """
 
     # define the featureset functions
@@ -94,16 +99,12 @@ def combined_data_processing() -> tuple[np.array, np.array]:
                             feature_mean_train_matrix = np.squeeze(feature_mean_train_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                             feature_training_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                         else:
-                            #prasanth
                             dummy = np.append(np.mean(featureset_feature_matrix , axis = 1 , keepdims = True) , 
                                                 np.append(np.var(featureset_feature_matrix , axis = 1 , keepdims = True), 
                                                                         np.append( np.max(featureset_feature_matrix , axis = 1 , keepdims = True), 
                                                                                                 np.min(featureset_feature_matrix, axis = 1 , keepdims=True) , axis = 1  ) , axis = 1  ) , axis = 1 )
                             dummy = np.squeeze(dummy.flatten('F').reshape(1, -1)).reshape(-1,1).T
                             feature_mean_train_matrix = np.append(feature_mean_train_matrix , dummy , axis = 0)
-                            
-                            #prasanth
-
 
                             max_cols = min(featureset_feature_matrix.size, feature_training_matrix.shape[1])
 
@@ -137,7 +138,6 @@ def combined_data_processing() -> tuple[np.array, np.array]:
 
                 # trim columns as necessary and append flattened matrix row-wise
                 if feature_kaggle_matrix.size == 0:
-                    #prasanth
                     print(featureset_feature_matrix.shape)
                     feature_mean_kaggle_matrix = np.append(np.mean(featureset_feature_matrix , axis = 1 , keepdims = True  ) , np.var(featureset_feature_matrix , axis = 1 , keepdims = True) , axis = 1)
                     feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix , np.max(featureset_feature_matrix , axis = 1 , keepdims = True ) , axis = 1)
@@ -145,23 +145,12 @@ def combined_data_processing() -> tuple[np.array, np.array]:
                     feature_mean_kaggle_matrix = np.squeeze(feature_mean_kaggle_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                     feature_kaggle_matrix = np.squeeze(featureset_feature_matrix.flatten('F').reshape(1, -1)).reshape(-1,1).T
                 else:
-
-
-                    #prasanth
-
                     dummy = np.append(np.mean(featureset_feature_matrix , axis = 1, keepdims = True) , 
                                             np.append( np.var(featureset_feature_matrix , axis = 1, keepdims = True) ,
                                                                 np.append( np.max(featureset_feature_matrix , axis = 1, keepdims = True) , 
                                                                                             np.min(featureset_feature_matrix, axis = 1, keepdims = True) , axis = 1 ) , axis = 1), axis = 1)
                     dummy = np.squeeze(dummy.flatten('F').reshape(1, -1)).reshape(-1,1).T
                     feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix , dummy , axis = 0)
-                    # feature_mean_kaggle_matrix = np.append(feature_mean_kaggle_matrix ,
-                                                                #    np.squeeze(np.append(np.mean(featureset_feature_matrix , axis = 1  ) , 
-                                                                                                    # np.var(featureset_feature_matrix , axis = 1)).flatten('F').reshape(1, -1)).reshape(-1,1).T , axis =0)
-                    #prasanth
-
-
-
 
                     max_cols = min(featureset_feature_matrix.size, feature_kaggle_matrix.shape[1])
                     feature_kaggle_matrix = np.append(
@@ -171,7 +160,6 @@ def combined_data_processing() -> tuple[np.array, np.array]:
                     )
 
         # at this point, feature_training_matrix and feature_kaggle_matrix should hold the unprocessed feature data
-
 
         # training and kaggle matrices must have the same number of features for PCA to work correctly
         max_cols = min(feature_training_matrix.shape[1], feature_kaggle_matrix.shape[1])
@@ -248,20 +236,56 @@ def generate_one_hot(Y_training: np.array ) -> np.array:
     source : StackOverFlow
 
     url : https://stackoverflow.com/questions/58676588/how-do-i-one-hot-encode-an-array-of-strings-with-numpy 
+
+    Parameters:
+        Y_training: numpy vector of class labels
+
+    Returns:
+        a one-hot-encoded representation of the provided class labels
     """
+    
     onehotencoder = preprocessing.OneHotEncoder(categories='auto', sparse_output=False)
     one_hot_array = onehotencoder.fit_transform( Y_training)
     return one_hot_array, onehotencoder.categories_[0]
     
 
 def standardize_columns(df: pd.DataFrame ) -> np.array:
+    """ Standardizes the columns of the provide matrix
+
+    Parameters:
+        array: a numpy array
+
+    Returns:
+        the provided array standardized columnwise
+    """
     scaler = preprocessing.RobustScaler()
     df = scaler.fit_transform(df)
     return (df, scaler)
 
+
 def normalize_row(array : np.array) -> np.array :
+    """ Normalizes the rows of the provide matrix
+
+    Parameters:
+        array: a numpy array
+
+    Returns:
+        the provided array normalized rowwise
+    """
+    
     return preprocessing.normalize(array , axis = 1)
+
+
 def normalize_columns(array : np.array ) -> np.array :
+    """ Normalizes the columns of the provide matrix
+
+        Parameters:
+            array: a numpy array
+
+        Returns:
+            the provided array normalized columnwise
+    """
+    
     return preprocessing.normalize(array , axis = 0)
 
 
