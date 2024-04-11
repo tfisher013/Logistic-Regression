@@ -15,6 +15,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import GradientBoostingClassifier
 
 from utils.process_audio_data import *
+from utils.consts import *
 import numpy as np
 
 
@@ -24,7 +25,7 @@ def library_model_hyperparameter_search():
     """
 
     # read and process audio data
-    X_train, X_test, y_train, y_test, kaggle = combined_data_processing('data/train', 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     # get training/testing data
     #X_train = np.load('X_train.npy')
@@ -131,7 +132,7 @@ def train_library_random_forest(training_data_directory: str):
 
     print('Starting random forest classifier')
 
-    X_train, X_test, y_train, y_test, kaggle_data = combined_data_processing(training_data_directory, 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     print(f'Shape of X_train data: {X_train.shape}')
     print(f'Shape of X_test data: {X_test.shape}')
@@ -160,7 +161,7 @@ def train_library_svm(training_data_directory: str):
 
     print('Starting SVM classifier')
 
-    X_train, X_test, y_train, y_test, kaggle_data = combined_data_processing(training_data_directory, 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     print(f'Shape of X_train data: {X_train.shape}')
     print(f'Shape of X_test data: {X_test.shape}')
@@ -189,7 +190,7 @@ def train_library_naive_bayes(training_data_directory: str):
 
     print('Starting naive bayes classifier')
 
-    X_train, X_test, y_train, y_test, kaggle_data = combined_data_processing(training_data_directory, 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     print(f'Shape of X_train data: {X_train.shape}')
     print(f'Shape of X_test data: {X_test.shape}')
@@ -218,7 +219,7 @@ def train_library_gradient_boosting(training_data_directory: str):
 
     print('Starting gradient boosting classifier')
 
-    X_train, X_test, y_train, y_test, kaggle_data = combined_data_processing(training_data_directory, 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     print(f'Shape of X_train data: {X_train.shape}')
     print(f'Shape of X_test data: {X_test.shape}')

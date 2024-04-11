@@ -74,13 +74,9 @@ def gradient_descent(X_training: np.array, Y_training: np.array, Y_categories : 
     return W
 
 
-def train_logistic_regression(training_data_dir: str):
+def train_logistic_regression():
     """ Trains a logistic regression model using the training data in the provided
         directory
-
-        Parameters:
-            training_data_dir: path to directory which contains training instances 
-                each organized into separate directories by class
 
     """
 
@@ -109,7 +105,7 @@ def train_logistic_regression(training_data_dir: str):
 
     # write weight matrix to file
     weights_df = pd.DataFrame(W_trained, columns=[i for i in range(W_trained.shape[1])])
-    weights_df.to_csv(model_dir + '/model4.csv')
+    weights_df.to_csv(model_dir + '/model.csv')
 
     # generate accuracy on test split
     # result_indexes = np.argmax(np.matmul(X_test, W_trained.T) - 
@@ -131,7 +127,7 @@ def train_logistic_regression(training_data_dir: str):
 
     
     # create predictions file for kaggle
-    validate_model(W=W_trained, X_test=kaggle, y_categories=y_categories, file_names=os.listdir('data/test'))
+    validate_model(W=W_trained, X_test=kaggle, y_categories=y_categories, file_names=os.listdir(testing_data_path))
 
     
 
@@ -139,6 +135,6 @@ if __name__ == '__main__':
     """ Main function for testing
     """
 
-    train_logistic_regression('data/train')
+    train_logistic_regression()
 
 

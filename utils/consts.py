@@ -1,3 +1,9 @@
+# path to directory of training data
+training_data_path = 'data/training'
+
+# path to directory of testing data
+testing_data_path = 'data/testing'
+
 # the amount of error to allow before terminating gradient descent
 epsilon = 0.01
 
