@@ -7,10 +7,24 @@ UNM CS 529 Project 2: Creation of logistic regression classifier from scratch.
 ## Instructions for Use
 
 ### Install Dependencies
+
+Create a Python virtual environment
 ```bash
-- python -m venv YOURVENV
-- YOURENV/Scripts/activate
-- pip install requirements.txt
+python -m venv YOURVENV
+```
+
+Activate the environment by running this command on Windows...
+```bash
+YOURENV/Scripts/activate
+```
+or this command on Linux/MacOS
+```bash
+source ./YOURENV/bin/activate
+```
+
+Install required dependecies with the command below (all platforms):
+```bash
+pip install -r requirements.txt
 ```
 
 ### Train Logistic Regression
