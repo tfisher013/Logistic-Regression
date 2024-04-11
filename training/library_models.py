@@ -15,6 +15,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import GradientBoostingClassifier
 
 from utils.process_audio_data import *
+from utils.consts import *
 import numpy as np
 
 
@@ -24,7 +25,7 @@ def library_model_hyperparameter_search():
     """
 
     # read and process audio data
-    X_train, X_test, y_train, y_test, kaggle = combined_data_processing('data/train', 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     # get training/testing data
     #X_train = np.load('X_train.npy')
@@ -120,18 +121,14 @@ def library_model_hyperparameter_search():
                 print(f'    Balanced accuracy: {total_acc / skf.get_n_splits()}')
 
 
-def train_library_random_forest(training_data_directory: str):
+def train_library_random_forest():
     """ Trains sklearn's random forest model on our data pipeline and
         shows the resulting accuracy
-
-        Parameters:
-            training_data_directory: the path to the directory containing
-                training data for the model
     """
 
     print('Starting random forest classifier')
 
-    X_train, X_test, y_train, y_test, kaggle_data = combined_data_processing(training_data_directory, 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     print(f'Shape of X_train data: {X_train.shape}')
     print(f'Shape of X_test data: {X_test.shape}')
@@ -149,18 +146,14 @@ def train_library_random_forest(training_data_directory: str):
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_svm(training_data_directory: str):
+def train_library_svm():
     """ Trains sklearn's SVM model on our data pipeline and
         shows the resulting accuracy
-
-        Parameters:
-            training_data_directory: the path to the directory containing
-                training data for the model
     """
 
     print('Starting SVM classifier')
 
-    X_train, X_test, y_train, y_test, kaggle_data = combined_data_processing(training_data_directory, 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     print(f'Shape of X_train data: {X_train.shape}')
     print(f'Shape of X_test data: {X_test.shape}')
@@ -178,18 +171,14 @@ def train_library_svm(training_data_directory: str):
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_naive_bayes(training_data_directory: str):
+def train_library_naive_bayes():
     """ Trains sklearn's naive bayes model on our data pipeline and
         shows the resulting accuracy
-
-        Parameters:
-            training_data_directory: the path to the directory containing
-                training data for the model
     """
 
     print('Starting naive bayes classifier')
 
-    X_train, X_test, y_train, y_test, kaggle_data = combined_data_processing(training_data_directory, 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     print(f'Shape of X_train data: {X_train.shape}')
     print(f'Shape of X_test data: {X_test.shape}')
@@ -207,18 +196,14 @@ def train_library_naive_bayes(training_data_directory: str):
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_gradient_boosting(training_data_directory: str):
+def train_library_gradient_boosting():
     """ Trains sklearn's gradient boosting model on our data pipeline and
         shows the resulting accuracy
-
-        Parameters:
-            training_data_directory: the path to the directory containing
-                training data for the model
     """
 
     print('Starting gradient boosting classifier')
 
-    X_train, X_test, y_train, y_test, kaggle_data = combined_data_processing(training_data_directory, 'data/test')
+    X_train, X_test, y_train, y_test, kaggle = combined_data_processing()
 
     print(f'Shape of X_train data: {X_train.shape}')
     print(f'Shape of X_test data: {X_test.shape}')
