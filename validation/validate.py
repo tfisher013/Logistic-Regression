@@ -32,14 +32,28 @@ def validate_model( W : np.array  , X_test: np.array , y_categories , file_names
     
 
 def plot_confusion_matrix( actual_results : np.array , predicted_results : np.array , classes : np.array ):
-    title = 'Confusion Matix'
+    """
+    This function is used to validate a given model with weights : W
+
+    parameters :
+        actual_results : a array of actual results 
+
+        predicted_results : array of predicted results  
+         
+        classes : a array of ordered labels extracted from onehotencoder
+
+    
+    """
+
+    title = 'Confusion Matix' #title of the plot that is to be generated
+
     conf_matrix = confusion_matrix(actual_results , predicted_results)
     figure , axis = plt.subplots(figsize = (7,5))
-    cmap=plt.cm.Blues
+    cmap=plt.cm.Blues #colormap that is used to generate the confusion matrix 
     im = axis.imshow(conf_matrix, interpolation='nearest', cmap=cmap)
     axis.figure.colorbar(im, ax=axis)
     
-    # We want to show all ticks and label them with the respective list entries
+    # We want to show all targets and label them with the respective list entries
     axis.set(xticks=np.arange(conf_matrix.shape[1]),
            yticks=np.arange(conf_matrix.shape[0]),
            xticklabels=classes, yticklabels=classes,
@@ -47,7 +61,7 @@ def plot_confusion_matrix( actual_results : np.array , predicted_results : np.ar
            ylabel='True label',
            xlabel='Predicted label')
     
-    # Rotate the tick labels and set their alignment.
+    # Aims to rotate the  labels and set their position.
     plt.setp(axis.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     
     # Loop over data dimensions and create text annotations with customized colors
@@ -61,7 +75,7 @@ def plot_confusion_matrix( actual_results : np.array , predicted_results : np.ar
                     
     figure.tight_layout()
     plt.savefig('confusion_matrix.png')
-    plt.show()
+    # plt.show()
     
     return conf_matrix
 
