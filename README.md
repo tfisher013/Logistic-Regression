@@ -40,7 +40,7 @@ UNM CS 529 Project 2: Creation of logistic regression classifier from scratch.
 
 ## Developer Contributions
 
-Prasanth Guvvala
+Prasanth Reddy Guvvala
 - Implemented gradient descent algorithm.
 - Implemented statistical feature transformations.
 - Wrote script to generate confusion matrix.
