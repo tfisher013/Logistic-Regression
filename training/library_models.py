@@ -121,13 +121,9 @@ def library_model_hyperparameter_search():
                 print(f'    Balanced accuracy: {total_acc / skf.get_n_splits()}')
 
 
-def train_library_random_forest(training_data_directory: str):
+def train_library_random_forest():
     """ Trains sklearn's random forest model on our data pipeline and
         shows the resulting accuracy
-
-        Parameters:
-            training_data_directory: the path to the directory containing
-                training data for the model
     """
 
     print('Starting random forest classifier')
@@ -150,13 +146,9 @@ def train_library_random_forest(training_data_directory: str):
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_svm(training_data_directory: str):
+def train_library_svm():
     """ Trains sklearn's SVM model on our data pipeline and
         shows the resulting accuracy
-
-        Parameters:
-            training_data_directory: the path to the directory containing
-                training data for the model
     """
 
     print('Starting SVM classifier')
@@ -179,13 +171,9 @@ def train_library_svm(training_data_directory: str):
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_naive_bayes(training_data_directory: str):
+def train_library_naive_bayes():
     """ Trains sklearn's naive bayes model on our data pipeline and
         shows the resulting accuracy
-
-        Parameters:
-            training_data_directory: the path to the directory containing
-                training data for the model
     """
 
     print('Starting naive bayes classifier')
@@ -208,13 +196,9 @@ def train_library_naive_bayes(training_data_directory: str):
     print(f'Balanced accuracy is {acc}')
 
 
-def train_library_gradient_boosting(training_data_directory: str):
+def train_library_gradient_boosting():
     """ Trains sklearn's gradient boosting model on our data pipeline and
         shows the resulting accuracy
-
-        Parameters:
-            training_data_directory: the path to the directory containing
-                training data for the model
     """
 
     print('Starting gradient boosting classifier')
