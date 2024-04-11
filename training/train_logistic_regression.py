@@ -6,7 +6,7 @@ from utils.file_utils import write_loss_to_file
 import pandas as pd
 from sklearn import metrics
 from numpy import linalg as LA
-from validation.validate import validate_model
+from validation.validate import plot_confusion_matrix, validate_model
 
 
 def vectorized_probability(matrix: np.array) -> np.array:
@@ -112,18 +112,27 @@ def train_logistic_regression(training_data_dir: str):
     weights_df.to_csv(model_dir + '/model4.csv')
 
     # generate accuracy on test split
-    result_indexes = np.argmax(np.matmul(X_test, W_trained.T) - 
-                               ((lambda_hyperparameter / 2) ** 2) * LA.norm(W_trained), axis=1)
+    # result_indexes = np.argmax(np.matmul(X_test, W_trained.T) - 
+    #                            ((lambda_hyperparameter / 2) ** 2) * LA.norm(W_trained), axis=1)
+    
+
+    result_indexes = np.argmax(np.matmul(X_test, W_trained.T)  , axis =1 )
     results = np.take(y_categories, result_indexes)
 
     # for testing on train/test split
     print('-'*10, 'accuracy : ', metrics.accuracy_score(y_test, results), '-'*10)
 
+
     # calculate recall
     print(f'Model recall: {metrics.recall_score(y_test, results, average="micro")}')
+
+    plot_confusion_matrix( y_test , results , y_categories)
+    
+
     
     # create predictions file for kaggle
     validate_model(W=W_trained, X_test=kaggle, y_categories=y_categories, file_names=os.listdir('data/test'))
+
     
 
 if __name__ == '__main__':

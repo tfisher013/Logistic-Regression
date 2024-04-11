@@ -1,7 +1,10 @@
+from matplotlib import cm
 import numpy as np
 from utils.consts import lambda_hyperparameter
 import pandas as pd
 from numpy import linalg as LA
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
 
 def validate_model( W : np.array  , X_test: np.array , y_categories , file_names : np.array ):
     """
@@ -28,7 +31,39 @@ def validate_model( W : np.array  , X_test: np.array , y_categories , file_names
     predicted.to_csv('predicted_results.csv' , index = False)
     
 
-
+def plot_confusion_matrix( actual_results : np.array , predicted_results : np.array , classes : np.array ):
+    title = 'Confusion Matix'
+    conf_matrix = confusion_matrix(actual_results , predicted_results)
+    figure , axis = plt.subplots(figsize = (7,5))
+    cmap=plt.cm.Blues
+    im = axis.imshow(conf_matrix, interpolation='nearest', cmap=cmap)
+    axis.figure.colorbar(im, ax=axis)
+    
+    # We want to show all ticks and label them with the respective list entries
+    axis.set(xticks=np.arange(conf_matrix.shape[1]),
+           yticks=np.arange(conf_matrix.shape[0]),
+           xticklabels=classes, yticklabels=classes,
+           title=title,
+           ylabel='True label',
+           xlabel='Predicted label')
+    
+    # Rotate the tick labels and set their alignment.
+    plt.setp(axis.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    
+    # Loop over data dimensions and create text annotations with customized colors
+    fmt = 'd'
+    thresh = conf_matrix.max() / 2.
+    for i in range(conf_matrix.shape[0]):
+        for j in range(conf_matrix.shape[1]):
+            axis.text(j, i, format(conf_matrix[i, j], fmt),
+                    ha="center", va="center",
+                    color="white" if conf_matrix[i, j] > thresh else "black")
+                    
+    figure.tight_layout()
+    plt.savefig('confusion_matrix.png')
+    plt.show()
+    
+    return conf_matrix
 
 
 
