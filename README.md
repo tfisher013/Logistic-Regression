@@ -50,5 +50,5 @@ Thomas Fisher
 
 ## kaggle Submission
 
-Leaderboard position 5 achieved with accuracy 0.71 on April 8th.
+Leaderboard position 5 achieved with accuracy 0.71 on April 8th (team name Fisher & Guvvala).
 
